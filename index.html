@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>'ราคากลาง'งานไฟฟ้าภายในบ้าน V6 (Hybrid Master)</title>
+    <title>'ราคากลาง'งานไฟฟ้าภายในบ้าน V6 (Hybrid-GitHub)</title>
     
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -158,6 +158,7 @@
                     <div class="p-3 border rounded">
                         <div class="grid grid-cols-2 gap-4">
                             <div><label class="text-sm">ปั๊มน้ำ (เครื่อง)</label><input type="number" class="form-input" id="pump_units" placeholder="0"></div>
+                            <div><label class="text-sm">รูปแบบ</label><select class="form-input" id="wp_install_type_6"><option value="pvc_clip">ท่อ PVC ลอย</option><option value="nyy_burial">ฝังดิน</option></select></div>
                             <div><label class="text-sm">พัดลม (เครื่อง)</label><input type="number" class="form-input" id="fan_units" placeholder="0"></div>
                         </div>
                     </div>
@@ -181,6 +182,14 @@
                         </div>
                         <label class="mt-2 block text-xs flex items-center gap-2"><input type="checkbox" id="demo_include_repair_9" class="w-4 h-4"> รวมค่าซ่อมผนัง</label>
                     </div>
+                    <!-- Service -->
+                     <div class="p-3 bg-yellow-50 rounded border">
+                         <h4 class="font-bold text-sm mb-2">งานบริการ</h4>
+                         <label class="block flex items-center gap-2"><input type="checkbox" id="service_inspection" class="w-4 h-4"> ตรวจเช็คระบบ</label>
+                         <label class="block flex items-center gap-2"><input type="checkbox" id="service_leak_find" class="w-4 h-4"> หาไฟรั่ว</label>
+                         <label class="block flex items-center gap-2"><input type="checkbox" id="service_trip_find" class="w-4 h-4"> เช็คเบรกเกอร์ทริป</label>
+                         <input type="number" id="service_lamp_replace" class="form-input mt-2" placeholder="เปลี่ยนหลอด (จุด)">
+                     </div>
                 </div>
             </div>
         </div>
@@ -359,7 +368,7 @@ function renderPriceList() {
     let html = '';
     for (const [key, price] of Object.entries(priceList)) {
         const desc = allItems.get(key)?.desc || key;
-        html += `<tr class="border-b border-gray-100 hover:bg-gray-50"><td class="p-2 text-slate-600"><span class="font-mono text-xs font-bold text-blue-600">${key}</span><br><span class="text-xs text-gray-400">${desc.substring(0,30)}...</span></td><td class="p-2 text-right"><input type="number" class="w-20 text-right border rounded bg-white px-1 py-1 text-sm focus:ring-2 focus:ring-blue-200 outline-none" value="${price}" onchange="updatePrice('${key}', this.value)"></td></tr>`;
+        html += `<tr class="border-b border-gray-100 hover:bg-gray-50"><td class="p-2 text-slate-600"><span class="font-mono text-xs font-bold text-blue-600">${key}</span><br><span class="text-xs text-gray-400">${desc ? desc.substring(0,30) : ''}...</span></td><td class="p-2 text-right"><input type="number" class="w-20 text-right border rounded bg-white px-1 py-1 text-sm focus:ring-2 focus:ring-blue-200 outline-none" value="${price}" onchange="updatePrice('${key}', this.value)"></td></tr>`;
     }
     tbody.innerHTML = html;
 }
@@ -422,7 +431,12 @@ function buildTaskQuantities() {
     }
     
     const pumpCount = val('pump_units');
-    if(pumpCount > 0) add('5.3', pumpCount);
+    if(pumpCount > 0) {
+        add('5.3', pumpCount);
+        const pType = str('wp_install_type_6');
+        if(pType === 'nyy_burial') add('16.2', pumpCount * 15);
+        else if(pType === 'vct_clip') add('16.1', pumpCount * 15);
+    }
     
     const fanCount = val('fan_units');
     if(fanCount > 0) add('5.4', fanCount);
@@ -449,15 +463,26 @@ function buildTaskQuantities() {
     add('11.5', val('cctv_points'));
     
     // --- 5. Service/Demo ---
+    if(isChecked('service_inspection')) add('8.1', 1);
+    if(isChecked('service_leak_find')) add('8.2', 1);
+    if(isChecked('service_trip_find')) add('8.3', 1);
+    add('8.4', val('service_lamp_replace'));
+
     add('19.1', val('demo_lights_9'));
     add('19.2', val('demo_outlets_9'));
     add('19.3', val('demo_cables_9'));
     add('19.4', val('demo_ac_9'));
     
+    if(isChecked('demo_include_repair_9')) add('19.5', val('demo_lights_9') + val('demo_outlets_9'));
+
     // --- 6. EV ---
     if(isChecked('toggle_ev_charger_visibility')) {
         add('18.1', 1);
         if(str('ev_install_type_8') === 'new_meter_tou') add('18.2', 1);
+        
+        // Override EV cost dynamically if input exists
+        const evCost = val('ev_charger_cost_8');
+        if(evCost > 0) priceList['M-EV-CHARGER-7KW'] = evCost;
     }
 
     return quantities;
@@ -492,6 +517,13 @@ function calculateTotal() {
                 // Add to PO
                 if(!results.purchaseOrder[cableId]) results.purchaseOrder[cableId] = { description: `สายเมน ${type} ${size}`, spec: cableId, unit: 'เมตร', quantity: 0, unit_price: p };
                 results.purchaseOrder[cableId].quantity += (qty * 2);
+                
+                // Add Ground Wire for Main
+                const gndId = 'M-WIRE-GND-10SQMM'; // Default main ground
+                const gp = (priceList[gndId] || 0) * quality;
+                matCost += gp;
+                if(!results.purchaseOrder[gndId]) results.purchaseOrder[gndId] = { description: `สายดินเมน`, spec: 'THW 10', unit: 'เมตร', quantity: 0, unit_price: gp };
+                results.purchaseOrder[gndId].quantity += qty;
             }
         } else {
             // Standard Logic
@@ -628,7 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Buttons
     el('calculate-btn').addEventListener('click', () => {
-        const data = calculateCosts();
+        const data = calculateTotal();
         displayReport(data);
         el('output-section').classList.remove('hidden');
         el('output-section').scrollIntoView({behavior:'smooth'});
@@ -701,7 +733,7 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.classList.add('tab-active', 'border-blue-600', 'text-blue-600');
             e.target.classList.remove('text-gray-500');
             
-            displayReport(calculateCosts(), e.target.dataset.tab);
+            displayReport(calculateTotal(), e.target.dataset.tab);
         });
     });
     
@@ -754,7 +786,7 @@ function displayReport(costs, tab = 'boq-combined') {
         costs.combined.forEach(item => {
              content += `<tr>
                 <td class="p-2 border">${item.description}</td>
-                <td class="p-2 border text-center">${item.quantity} ${item.unit}</td>
+                <td class="p-2 border text-center">${item.quantity.toFixed(0)} ${item.unit}</td>
                 <td class="p-2 border text-right">${formatCurrency(item.material_unit_cost * item.quantity)}</td>
                 <td class="p-2 border text-right">${formatCurrency(item.labor_unit_cost * item.quantity)}</td>
                 <td class="p-2 border text-right font-bold">${formatCurrency((item.material_unit_cost + item.labor_unit_cost) * item.quantity)}</td>
@@ -798,8 +830,44 @@ function displayReport(costs, tab = 'boq-combined') {
         });
         content += `</table>`;
         
-    } else {
-        content = `<div class="p-8 text-center text-gray-400 border-2 border-dashed rounded">ส่วนนี้กำลังพัฒนา (ใช้ BOQ รวมไปก่อนนะครับ)</div>`;
+    } else if (tab === 'boq-labor') {
+        content = `<table class="w-full text-sm border-collapse border border-slate-200">
+            <tr class="bg-slate-100 text-slate-700">
+                <th class="p-2 border text-left">รายการ</th>
+                <th class="p-2 border text-center">จำนวน</th>
+                <th class="p-2 border text-right">ค่าแรง/หน่วย</th>
+                <th class="p-2 border text-right">รวม</th>
+            </tr>`;
+        costs.combined.forEach(item => {
+            if (item.labor_unit_cost > 0) {
+                content += `<tr>
+                    <td class="p-2 border">${item.description}</td>
+                    <td class="p-2 border text-center">${item.quantity.toFixed(0)} ${item.unit}</td>
+                    <td class="p-2 border text-right">${formatCurrency(item.labor_unit_cost)}</td>
+                    <td class="p-2 border text-right font-bold">${formatCurrency(item.labor_unit_cost * item.quantity)}</td>
+                 </tr>`;
+            }
+        });
+        content += `</table>`;
+    } else if (tab === 'boq-material') {
+        content = `<table class="w-full text-sm border-collapse border border-slate-200">
+            <tr class="bg-slate-100 text-slate-700">
+                <th class="p-2 border text-left">รายการ</th>
+                <th class="p-2 border text-center">จำนวน</th>
+                <th class="p-2 border text-right">ค่าวัสดุ/หน่วย</th>
+                <th class="p-2 border text-right">รวม</th>
+            </tr>`;
+        costs.combined.forEach(item => {
+            if (item.material_unit_cost > 0) {
+                content += `<tr>
+                    <td class="p-2 border">${item.description}</td>
+                    <td class="p-2 border text-center">${item.quantity.toFixed(0)} ${item.unit}</td>
+                    <td class="p-2 border text-right">${formatCurrency(item.material_unit_cost)}</td>
+                    <td class="p-2 border text-right font-bold">${formatCurrency(item.material_unit_cost * item.quantity)}</td>
+                 </tr>`;
+            }
+        });
+        content += `</table>`;
     }
 
     container.innerHTML = header + content;

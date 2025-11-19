@@ -1,306 +1,106 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>'ราคากลาง'งานไฟฟ้าภายในบ้าน V6 (Hybrid-JSON)</title>
+    <title>ทดสอบระบบ Hybrid (จำลอง)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet" />
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f9; color: #334155; }
-        .tab-active { border-color: #3b82f6; color: #3b82f6; font-weight: 700; }
-        .config-card { background-color: white; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); border-left: 4px solid #3b82f6; transition: all 0.2s ease-in-out; }
-        .config-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07); }
-        .circuit-container { background-color: #f8fafc; padding: 1rem; border-radius: 0.5rem; margin-top: 1rem; border: 1px solid #e2e8f0; }
-        .form-input { border-radius: 0.5rem; border-color: #cbd5e1; transition: all 0.2s ease-in-out; width: 100%; padding: 0.5rem; border: 1px solid #ccc; }
-        .form-input:focus { outline: none; border-color: #3b82f6; ring: 2px; ring-color: #3b82f6; }
-        .btn { border-radius: 0.5rem; font-weight: 700; padding: 0.75rem 1rem; cursor: pointer; }
-        .btn-primary { background-image: linear-gradient(to right, #3b82f6, #2563eb); color: white; }
-        .btn-secondary { background-color: #475569; color: white; }
-        .btn-delete-row { background-color: #fee2e2; color: #ef4444; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; }
-        
-        /* Styles สำหรับ Hybrid Status */
-        .status-badge { position: fixed; top: 10px; right: 10px; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .status-offline { background-color: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
-        .status-online { background-color: #dcfce7; color: #166534; border: 1px solid #22c55e; }
-        .status-loading { background-color: #e0f2fe; color: #0369a1; border: 1px solid #38bdf8; }
-
-        /* Styles สำหรับ Accordion */
-        .collapsible-card > *:not(h3) { display: none; }
-        .collapsible-card.open > * { display: block; }
-        .collapsible-card h3 { cursor: pointer; }
-        .collapsible-card h3::after { content: "▶"; float: right; transition: transform .2s; }
-        .collapsible-card.open h3::after { content: "▼"; transform: rotate(90deg); }
-
-        @media print {
-            body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { display: block; position: absolute; left: 0; top: 0; width: 100%; }
-            .no-print, .status-badge { display: none; }
-        }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f0f9ff; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .status-box { padding: 10px; border-radius: 5px; font-weight: bold; text-align: center; margin-bottom: 20px; }
+        .status-loading { background-color: #fef3c7; color: #b45309; border: 1px solid #fcd34d; }
+        .status-success { background-color: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .btn { background: #2563eb; color: white; padding: 8px 16px; border-radius: 5px; cursor: pointer; }
+        .btn:hover { background: #1d4ed8; }
     </style>
 </head>
-<body class="antialiased">
+<body>
 
-<!-- Status Indicator -->
-<div id="system-status" class="status-badge status-loading">
-    ⏳ กำลังเชื่อมต่อข้อมูล...
-</div>
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-2xl font-bold text-blue-800 mb-4">🛠️ ทดสอบระบบดึงข้อมูล (จำลอง)</h1>
+        
+        <!-- ส่วนแสดงสถานะ -->
+        <div id="status-display" class="status-box status-loading">
+            กำลังจำลองการดึงข้อมูลจาก GitHub... (รอ 2 วินาที)
+        </div>
 
-<!-- เนื้อหา HTML ทั้งหมด (ยกมาจาก v3 โดยตัด script ออก) -->
-<div class="container mx-auto p-4 md:p-8">
-    <header class="text-center mb-10 no-print">
-        <h1 class="text-5xl font-bold text-blue-600 tracking-tight">'ราคากลาง'งานไฟฟ้าภายในบ้าน <span class="text-3xl text-amber-500">Hybrid-JSON</span></h1>
-        <p class="text-xl text-slate-500 mt-2">โปรแกรมคำนวณสำหรับช่างไฟฟ้ายุคใหม่ (โหลดข้อมูลจาก GitHub)</p>
-    </header>
+        <!-- ส่วนแสดงข้อมูลที่ดึงมาได้ -->
+        <div id="data-container" class="hidden">
+            <div class="card border-l-4 border-green-500">
+                <h2 class="text-lg font-bold text-green-700 mb-2">✅ เชื่อมต่อสำเร็จ!</h2>
+                <p class="text-sm text-gray-600">ระบบได้ดึงข้อมูลราคาล่าสุดมาแล้ว ดังนี้:</p>
+            </div>
 
-    <!-- ส่วนข้อมูลโครงการ -->
-    <div class="mb-6 no-print">
-        <div class="config-card">
-            <h2 class="text-2xl font-bold text-blue-600 border-b-2 border-slate-200 pb-2 mb-4">ข้อมูลโครงการ</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div><label class="block text-sm font-medium text-slate-600">ชื่อโครงการ</label><input class="form-input mt-1" id="project_name" placeholder="เช่น บ้านคุณสมชาย" type="text"/></div>
-                <div><label class="block text-sm font-medium text-slate-600">ชื่อลูกค้า</label><input class="form-input mt-1" id="customer_name" placeholder="ชื่อ-นามสกุล" type="text"/></div>
-                <div><label class="block text-sm font-medium text-slate-600">วันที่</label><input class="form-input mt-1" id="report_date" type="date"/></div>
+            <div class="card">
+                <h3 class="font-bold text-gray-800 mb-3">ตัวอย่างราคา (Price List)</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-600">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2">รหัส (ID)</th>
+                                <th class="px-4 py-2 text-right">ราคา (บาท)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="price-table-body">
+                            <!-- ข้อมูลจะถูกเติมตรงนี้ -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button onclick="location.reload()" class="btn">🔄 ทดสอบใหม่</button>
             </div>
         </div>
     </div>
 
-    <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- ส่วน Input (ซ้าย) -->
-        <div class="lg:col-span-2 space-y-6" id="task-inputs-container">
-             <!-- Copy HTML ก้อนใหญ่จาก v3 มาวางที่นี่ -->
-             <!-- เพื่อความกระชับ ผมจะใช้ Placeholder หากคุณเอาไปใช้จริงต้องก๊อปปี้ส่วน <div class="config-card">...</div> ทั้งหมดจาก v3 มาใส่ตรงนี้ครับ -->
-             <!-- (ตัวอย่าง: เมนภายนอก) -->
-             <div class="config-card collapsible-card">
-                <h3 class="text-xl font-bold mb-4 text-slate-700 flex items-center gap-3">
-                    <span>⚡ งานเดินสายเมนไฟฟ้าภายนอก</span>
-                </h3>
-                <div class="space-y-4">
-                    <div class="p-4 border rounded-lg bg-blue-50 space-y-4">
-                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="text-sm font-medium text-slate-600">ความสูงเสา</label><select class="form-input" id="pole_height_7"><option value="0">-- ไม่ปักเสา --</option><option value="6.0">6.0 เมตร</option><option value="7.0">7.0 เมตร</option><option value="8.0">8.0 เมตร</option><option value="9.0">9.0 เมตร</option></select></div>
-                            <div><label class="text-sm font-medium text-slate-600">จำนวนเสา (ต้น)</label><input class="form-input" id="pole_count_7" type="number" placeholder="0"/></div>
-                            <div><label class="text-sm font-medium text-slate-600">แร็ค 2 ชุด (ต้น)</label><input class="form-input" id="rack_2_sets_7" type="number" placeholder="0"/></div>
-                            <div><label class="text-sm font-medium text-slate-600">แร็ค 4 ชุด (ต้น)</label><input class="form-input" id="rack_4_sets_7" type="number" placeholder="0"/></div>
-                         </div>
-                    </div>
-                    <div class="p-4 border rounded-lg bg-blue-50 space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="text-sm font-medium text-slate-600">เขตการไฟฟ้า</label><select class="form-input" id="main_authority_7"><option value="MEA">กฟน.</option><option value="PEA">กฟภ.</option></select></div>
-                            <div><label class="text-sm font-medium text-slate-600">มิเตอร์</label><select class="form-input" id="meter_size_3"><option value="5(15)">5(15)A</option><option selected value="15(45)">15(45)A</option><option value="30(100)">30(100)A</option></select></div>
-                            <div><label class="text-sm font-medium text-slate-600">ชนิดสาย</label><select class="form-input" id="main_ext_type_7"><option value="THW">ทองแดง (THW)</option><option value="THW-A">อะลูมิเนียม (THW-A)</option></select></div>
-                            <div><label class="text-sm font-medium text-slate-600">ระยะทาง (เมตร)</label><input class="form-input" id="main_ext_dist_7" type="number" placeholder="0"/></div>
-                            <div class="md:col-span-2"><p class="p-3 bg-blue-100 text-blue-800 rounded text-center font-mono" id="main_cable_spec_display">รอคำนวณ...</p></div>
-                        </div>
-                    </div>
-                </div>
-             </div>
-             
-             <!-- (Placeholder: ใส่ Card อื่นๆ ที่เหลือตรงนี้ - ตู้ไฟ, แสงสว่าง, เต้ารับ, แอร์, น้ำอุ่น, EV, รื้อถอน) -->
-             <!-- คุณสามารถ Copy HTML จากไฟล์ v3_hybrid_electric.html มาวางทับตรงนี้ได้เลยครับ -->
-        </div>
-
-        <!-- ส่วนสรุปผล (ขวา) -->
-        <div class="lg:col-span-1 space-y-6">
-            <div class="sticky top-4">
-                <section class="bg-white p-6 rounded-lg shadow-lg mb-6">
-                    <h2 class="text-2xl font-bold mb-4 border-b pb-2 text-blue-600">ตั้งค่าราคา</h2>
-                    <div class="space-y-3">
-                        <div><label class="text-sm">จังหวัด</label><select class="form-input" id="province_selector"></select></div>
-                        <div id="bkk_zone_container" class="hidden"><label class="text-sm">โซน กทม.</label><select class="form-input" id="bkk_zone_selector"><option value="BKK_Zone5_Suburban">ชานเมือง</option><option value="BKK_Zone1_CBD">ในเมือง</option></select></div>
-                        <div><label class="text-sm">คุณภาพวัสดุ</label><select class="form-input" id="material_quality"><option value="1.0">มาตรฐาน</option><option value="1.4">เกรดดี</option></select></div>
-                        <div class="flex items-center gap-2"><input type="checkbox" id="include_vat"/><label class="text-sm">คิด VAT 7%</label></div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div><label class="text-xs">ดำเนินการ %</label><input class="form-input" id="overhead_factor" type="number" value="0"/></div>
-                            <div><label class="text-xs">กำไร %</label><input class="form-input" id="profit_factor" type="number" value="0"/></div>
-                        </div>
-                        <div><label class="text-xs">ขั้นต่ำ (บาท)</label><input class="form-input" id="min_charge" type="number" value="1000"/></div>
-                        <div><label class="text-xs">เผื่อวัสดุ %</label><input class="form-input" id="wastage_factor" type="number" value="0"/></div>
-                    </div>
-                </section>
-
-                <section class="bg-white p-6 rounded-xl shadow-xl text-center">
-                    <p class="text-lg text-slate-500" id="total-display-label">ยอดรวมสุทธิ</p>
-                    <p class="text-5xl font-bold text-blue-600 my-2" id="total-display">฿0.00</p>
-                    <button class="btn btn-primary w-full mt-4 text-lg" id="calculate-btn">สร้างเอกสาร</button>
-                    <button class="btn btn-secondary w-full mt-2" id="reset-btn">รีเซ็ต</button>
-                </section>
-                
-                <!-- Price Editor -->
-                <section class="bg-white p-4 rounded-lg shadow mt-6 max-h-60 overflow-y-auto">
-                    <h3 class="font-bold mb-2 text-sm">ฐานข้อมูลราคา (แก้ไขได้)</h3>
-                    <table class="w-full text-xs">
-                        <tbody id="price-editor-body"></tbody>
-                    </table>
-                </section>
-            </div>
-        </div>
-    </main>
-
-    <!-- ส่วนแสดงผล Report -->
-    <section class="mt-12 bg-white p-6 rounded-lg shadow-lg hidden" id="output-section">
-        <div class="flex justify-between items-center border-b pb-2 mb-4 no-print">
-            <h2 class="text-2xl font-bold text-blue-600">เอกสารใบเสนอราคา</h2>
-            <div class="flex gap-2">
-                <button id="print-btn" class="btn btn-secondary text-sm">พิมพ์</button>
-                <button id="save-pdf-btn" class="btn btn-primary text-sm bg-red-600">PDF</button>
-            </div>
-        </div>
-        
-        <!-- Manual Item Adder -->
-        <div class="no-print p-4 bg-gray-50 rounded mb-4 border">
-             <h4 class="font-bold text-sm mb-2">เพิ่มรายการพิเศษ (Manual)</h4>
-             <div class="grid grid-cols-4 gap-2">
-                 <div class="col-span-2"><input type="text" id="manual-job-name" class="form-input text-sm" placeholder="ชื่องาน"></div>
-                 <div><input type="number" id="manual-job-labor-total" class="form-input text-sm" placeholder="ราคา"></div>
-                 <div><button id="manual-job-add-btn" class="btn btn-primary text-sm w-full">+</button></div>
-             </div>
-             <input type="hidden" id="manual-job-qty" value="1"><input type="hidden" id="manual-job-unit" value="งาน">
-             <table id="manual-job-materials-table" class="hidden"><tbody></tbody></table>
-             <button id="manual-job-add-material-row" class="hidden"></button>
-        </div>
-
-        <!-- Tabs -->
-        <div class="no-print border-b mb-4">
-            <nav class="flex space-x-4">
-                <button class="tab-btn tab-active py-2 font-bold" data-tab="boq-combined">BOQ รวม</button>
-                <button class="tab-btn py-2 text-gray-500" data-tab="purchase-order">ใบสั่งซื้อ</button>
-            </nav>
-        </div>
-        <div id="report-content"></div>
-    </section>
-
-    <div id="print-area" class="hidden"></div>
-</div>
-
-<script>
-    // ==========================================
-    // 1. REMOTE DATA LOADER (ส่วนที่เปลี่ยนไป)
-    // ==========================================
-    
-    // ใส่ลิงก์ Raw ของไฟล์ data.json ที่คุณอัปโหลดขึ้น GitHub ตรงนี้
-    const GITHUB_DATA_URL = "https://raw.githubusercontent.com/tanthaitanium21-dot/appp/refs/heads/main/data.json"; 
-
-    // ตัวแปรเก็บข้อมูล (จะถูกเติมเต็มเมื่อโหลดเสร็จ)
-    let appData = {}; 
-    let priceList = {};
-    let initialPriceList = {};
-    let electricalData = [];
-    
-    const allTasks = new Map();
-    const allItems = new Map();
-    let manualBOQItems = [];
-    let manualPOItems = [];
-
-    async function loadData() {
-        const statusBadge = document.getElementById('system-status');
-        
-        try {
-            statusBadge.innerHTML = '⏳ กำลังดึงข้อมูลจาก GitHub...';
-            
-            // ดึงข้อมูลจาก GitHub
-            const response = await fetch(GITHUB_DATA_URL);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+    <script>
+        // ==========================================
+        // จำลองข้อมูลหลังบ้าน (เหมือนไฟล์ data.json)
+        // ==========================================
+        const MOCK_SERVER_DATA = {
+            "priceList": {
+                "M-WIRE-THW-2.5": 12.50,
+                "M-WIRE-THW-4": 18.00,
+                "M-CONDUIT-PVC-1/2": 55.00,
+                "M-SW-1WAY": 45.00,
+                "L-INST-POINT": 150.00
             }
-            
-            const data = await response.json();
-            
-            // บันทึกข้อมูลลงตัวแปรหลัก
-            appData = data;
-            priceList = data.priceList;
-            initialPriceList = JSON.parse(JSON.stringify(data.priceList));
-            electricalData = data.electrical_installation_data;
-            
-            // Map Data สำหรับคำนวณ
-            electricalData.forEach(c => {
-                c.tasks.forEach(t => {
-                    allTasks.set(t.task_id, t);
-                    t.labor_components?.forEach(l => allItems.set(l.labor_id, { desc: `ค่าแรง: ${t.task_name}`}));
-                    t.material_components?.forEach(m => allItems.set(m.material_id, { desc: m.spec }));
-                });
-            });
-            
-            statusBadge.className = 'status-badge status-online';
-            statusBadge.innerHTML = '🟢 เชื่อมต่อ GitHub สำเร็จ';
-            
-            // เริ่มวาดหน้าจอ
-            renderUI();
-            
-        } catch (error) {
-            console.error("Failed to load data:", error);
-            statusBadge.className = 'status-badge status-offline';
-            statusBadge.innerHTML = `🔴 เชื่อมต่อล้มเหลว: ${error.message}`;
-            alert("ไม่สามารถดึงข้อมูลราคาได้ กรุณาตรวจสอบอินเทอร์เน็ต หรือลิงก์ GitHub");
-        }
-    }
+        };
 
-    function renderUI() {
-        // สร้าง Dropdown จังหวัด
-        const select = document.getElementById('province_selector');
-        select.innerHTML = '';
-        if(appData.provinces) {
-            appData.provinces.forEach(p => {
-                select.add(new Option(p, p));
-            });
-        }
-        select.value = 'นนทบุรี';
-
-        // สร้างตารางราคา
-        const tbody = document.getElementById('price-editor-body');
-        let html = '';
-        for (const [key, price] of Object.entries(priceList)) {
-            const desc = allItems.get(key)?.desc || key;
-            html += `<tr class="border-b"><td class="p-2 text-slate-600">${key}<br><small class="text-gray-400">${desc}</small></td><td class="p-2 text-right"><input type="number" class="w-20 text-right border rounded bg-gray-50 px-1" value="${price}" onchange="updatePrice('${key}', this.value)"></td></tr>`;
-        }
-        tbody.innerHTML = html;
+        // ==========================================
+        // จำลองการทำงานของหน้าบ้าน (Frontend Logic)
+        // ==========================================
         
-        // Reset ค่าเริ่มต้นอื่นๆ
-        resetForm();
-    }
+        document.addEventListener('DOMContentLoaded', async () => {
+            const statusEl = document.getElementById('status-display');
+            const containerEl = document.getElementById('data-container');
+            const tableBody = document.getElementById('price-table-body');
 
-    // ==========================================
-    // 2. CALCULATION LOGIC (เหมือนเดิมทุกประการ)
-    // ==========================================
-    // (ก๊อปปี้ฟังก์ชัน calculateCosts, buildTaskQuantitiesFromConfig, และอื่นๆ จาก v3_hybrid_electric.html มาวางต่อที่นี่ได้เลยครับ)
-    // เพื่อความกระชับ ผมจะเว้นส่วน Logic เดิมไว้ ถ้าคุณก๊อปวางเองให้เอาโค้ด JS ทั้งหมดจาก v3 (ตั้งแต่บรรทัด setupJobCostingListeners จนจบ) มาแปะต่อท้ายตรงนี้
-    
-    // ... (Place original JS logic here) ...
+            // 1. จำลองการรอโหลด (เหมือนเน็ตช้า)
+            await new Promise(resolve => setTimeout(resolve, 2000));
 
-    window.updatePrice = function(key, val) {
-        priceList[key] = parseFloat(val) || 0;
-    };
+            // 2. จำลองว่าดึงข้อมูลสำเร็จ
+            statusEl.textContent = "โหลดข้อมูลเสร็จสิ้น (Ready)";
+            statusEl.className = "status-box status-success";
+            containerEl.classList.remove('hidden');
 
-    // เริ่มทำงาน
-    document.addEventListener('DOMContentLoaded', () => {
-        loadData(); // เรียกฟังก์ชันดึงข้อมูลแทนการใช้ Local Mock
-        
-        // Bind Events และ Logic อื่นๆ (ก๊อปปี้จาก v3 มาได้เลย)
-        // ...
-        
-        // ตัวอย่าง Event เบื้องต้น
-        const provSelect = document.getElementById('province_selector');
-        if(provSelect) {
-             provSelect.addEventListener('change', function(){
-                const bkkZone = document.getElementById('bkk_zone_container');
-                if(this.value === 'กรุงเทพมหานคร') bkkZone.classList.remove('hidden');
-                else bkkZone.classList.add('hidden');
-            });
-        }
-        
-        // Accordion Logic
-        document.querySelectorAll('.collapsible-card h3').forEach(h=>{
-            h.addEventListener('click', ()=>{
-              h.parentElement.classList.toggle('open');
-            });
+            // 3. เอาข้อมูลมาแสดงผล
+            const prices = MOCK_SERVER_DATA.priceList;
+            let html = '';
+            
+            for (const [key, value] of Object.entries(prices)) {
+                html += `
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-4 py-2 font-medium text-gray-900">${key}</td>
+                        <td class="px-4 py-2 text-right">${value.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+            tableBody.innerHTML = html;
         });
-    });
-
-</script>
+    </script>
 </body>
-
 </html>

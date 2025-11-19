@@ -3,20 +3,27 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>'ราคากลาง'งานไฟฟ้าภายในบ้าน1 V6 (Hybrid Final)</title>
+    <title>'ราคากลาง'งานไฟฟ้าภายในบ้าน V6 (Hybrid Final)</title>
+    
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet" />
+    
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f9; color: #334155; }
         .tab-active { border-color: #3b82f6; color: #3b82f6; font-weight: 700; }
         .config-card { background-color: white; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); border-left: 4px solid #3b82f6; transition: all 0.2s; }
         .config-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07); }
-        .form-input { border-radius: 0.5rem; border: 1px solid #cbd5e1; width: 100%; padding: 0.5rem; }
-        .btn { border-radius: 0.5rem; font-weight: 700; padding: 0.75rem 1rem; cursor: pointer; transition: all 0.2s; }
-        .btn-primary { background-image: linear-gradient(to right, #3b82f6, #2563eb); color: white; }
+        .form-input { border-radius: 0.5rem; border: 1px solid #cbd5e1; width: 100%; padding: 0.5rem; transition: border 0.2s; }
+        .form-input:focus { border-color: #3b82f6; outline: none; ring: 2px; ring-color: #bfdbfe; }
+        .btn { border-radius: 0.5rem; font-weight: 700; padding: 0.75rem 1rem; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-primary { background-image: linear-gradient(to right, #3b82f6, #2563eb); color: white; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5); }
         .btn-secondary { background-color: #475569; color: white; }
+        .btn-danger { background-color: #ef4444; color: white; }
+        .btn-success { background-color: #10b981; color: white; }
         
         /* Status Badge */
         .status-badge { position: fixed; top: 10px; right: 10px; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; z-index: 9999; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -26,30 +33,35 @@
 
         .collapsible-card > *:not(h3) { display: none; }
         .collapsible-card.open > * { display: block; }
-        .collapsible-card h3 { cursor: pointer; user-select: none; }
-        .collapsible-card h3::after { content: "▶"; float: right; transition: transform .2s; }
-        .collapsible-card.open h3::after { content: "▼"; transform: rotate(90deg); }
+        .collapsible-card h3 { cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; }
+        .collapsible-card h3::after { content: "▶"; font-size: 0.8em; transition: transform .2s; }
+        .collapsible-card.open h3::after { content: "▼"; transform: rotate(0deg); }
 
-        @media print { .no-print, .status-badge { display: none; } #output-section { display: block !important; } }
+        @media print { 
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { display: block; position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print, .status-badge { display: none; } 
+        }
     </style>
 </head>
-<body class="antialiased">
+<body class="antialiased pb-20">
 
 <div id="system-status" class="status-badge status-loading">⏳ กำลังเชื่อมต่อข้อมูล...</div>
 
 <div class="container mx-auto p-4 md:p-8">
     <header class="text-center mb-10 no-print">
-        <h1 class="text-5xl font-bold text-blue-600 tracking-tight">'ราคากลาง' งานไฟฟ้า V6 <span class="text-amber-500">Hybrid</span></h1>
-        <p class="text-xl text-slate-500 mt-2">ระบบคำนวณราคา (เชื่อมต่อ GitHub Database)</p>
+        <h1 class="text-4xl md:text-5xl font-bold text-blue-600 tracking-tight">'ราคากลาง' งานไฟฟ้า V6 <span class="text-amber-500">Hybrid</span></h1>
+        <p class="text-xl text-slate-500 mt-2">โปรแกรมคำนวณสำหรับช่างไฟฟ้ายุคใหม่ (เชื่อมต่อ GitHub)</p>
     </header>
 
     <!-- ข้อมูลโครงการ -->
     <div class="mb-6 no-print">
-        <div class="config-card">
-            <h2 class="text-2xl font-bold text-blue-600 border-b-2 border-slate-200 pb-2 mb-4">ข้อมูลโครงการ</h2>
+        <div class="config-card open">
+            <h3 class="text-2xl font-bold text-blue-600 border-b-2 border-slate-200 pb-2 mb-4">ข้อมูลโครงการ</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div><label class="block text-sm font-medium text-slate-600">ชื่อโครงการ</label><input class="form-input mt-1" id="project_name" type="text"/></div>
-                <div><label class="block text-sm font-medium text-slate-600">ชื่อลูกค้า</label><input class="form-input mt-1" id="customer_name" type="text"/></div>
+                <div><label class="block text-sm font-medium text-slate-600">ชื่อโครงการ</label><input class="form-input mt-1" id="project_name" type="text" placeholder="เช่น บ้านพักอาศัย 2 ชั้น"/></div>
+                <div><label class="block text-sm font-medium text-slate-600">ชื่อลูกค้า</label><input class="form-input mt-1" id="customer_name" type="text" placeholder="คุณสมชาย ใจดี"/></div>
                 <div><label class="block text-sm font-medium text-slate-600">วันที่</label><input class="form-input mt-1" id="report_date" type="date"/></div>
             </div>
         </div>
@@ -58,7 +70,6 @@
     <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Left: Inputs -->
         <div class="lg:col-span-2 space-y-6" id="main-input-container">
-            <!-- Dynamic Content will be injected here or use static structure below -->
              
             <!-- 1. เมนภายนอก -->
             <div class="config-card collapsible-card">
@@ -75,7 +86,7 @@
                         <div><label class="text-sm">มิเตอร์</label><select class="form-input" id="meter_size_3"><option value="5(15)">5(15)A</option><option value="15(45)" selected>15(45)A</option><option value="30(100)">30(100)A</option></select></div>
                         <div><label class="text-sm">สายเมน</label><select class="form-input" id="main_ext_type_7"><option value="THW">ทองแดง (THW)</option><option value="THW-A">อลูมิเนียม (THW-A)</option></select></div>
                         <div><label class="text-sm">ระยะทาง (ม.)</label><input type="number" class="form-input" id="main_ext_dist_7" placeholder="0"></div>
-                        <div class="md:col-span-2 p-2 bg-blue-100 text-center rounded" id="main_cable_spec_display">รอคำนวณ...</div>
+                        <div class="md:col-span-2 p-2 bg-blue-100 text-center rounded text-blue-800 font-bold" id="main_cable_spec_display">รอคำนวณ...</div>
                     </div>
                 </div>
             </div>
@@ -84,16 +95,16 @@
             <div class="config-card collapsible-card">
                 <h3 class="text-xl font-bold mb-4 text-slate-700">🔌 ตู้ควบคุมและเบรกเกอร์</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label class="text-sm">เปลี่ยนตู้ CU</label><select class="form-input" id="cu_replacement"><option value="none">ไม่เปลี่ยน</option><option value="4_slot">4 ช่อง</option><option value="6_slot">6 ช่อง</option><option value="12_slot">12 ช่อง</option></select></div>
-                    <div class="flex items-center mt-6"><input type="checkbox" id="install_ground" class="mr-2"> <label>ติดตั้งหลักดินใหม่</label></div>
+                    <div><label class="text-sm">เปลี่ยนตู้ CU</label><select class="form-input" id="cu_replacement"><option value="none">ไม่เปลี่ยน</option><option value="4_slot">4 ช่อง</option><option value="6_slot">6 ช่อง</option><option value="8_slot">8 ช่อง</option><option value="10_slot">10 ช่อง</option><option value="12_slot">12 ช่อง</option></select></div>
+                    <div class="flex items-center mt-6"><input type="checkbox" id="install_ground" class="mr-2 w-5 h-5"> <label>ติดตั้งหลักดินใหม่</label></div>
                     <div><label class="text-sm">ระยะสายดิน (ม.)</label><input type="number" class="form-input" id="ground_distance" placeholder="0"></div>
                 </div>
                 <div class="mt-4 border-t pt-4">
-                    <h4 class="font-bold text-sm mb-2">เบรกเกอร์ลูกย่อย</h4>
+                    <h4 class="font-bold text-sm mb-2">เบรกเกอร์ลูกย่อย (MCB)</h4>
                     <div class="grid grid-cols-3 gap-2">
-                        <div><label class="text-xs">16A</label><input type="number" class="form-input" id="mcb_16a"></div>
-                        <div><label class="text-xs">20A</label><input type="number" class="form-input" id="mcb_20a"></div>
-                        <div><label class="text-xs">32A</label><input type="number" class="form-input" id="mcb_32a"></div>
+                        <div><label class="text-xs text-gray-500">16A (แสงสว่าง)</label><input type="number" class="form-input" id="mcb_16a" placeholder="0"></div>
+                        <div><label class="text-xs text-gray-500">20A (เต้ารับ)</label><input type="number" class="form-input" id="mcb_20a" placeholder="0"></div>
+                        <div><label class="text-xs text-gray-500">32A (กำลังสูง)</label><input type="number" class="form-input" id="mcb_32a" placeholder="0"></div>
                     </div>
                 </div>
             </div>
@@ -103,18 +114,18 @@
                 <h3 class="text-xl font-bold mb-4 text-slate-700">💡 แสงสว่าง/เต้ารับ</h3>
                 <div class="space-y-6">
                     <!-- แสงสว่าง -->
-                    <div class="bg-slate-50 p-3 rounded">
+                    <div class="bg-slate-50 p-3 rounded border">
                         <div class="grid grid-cols-2 gap-4">
-                            <div><label class="text-sm">จำนวนวงจรแสงสว่าง</label><input type="number" class="form-input" id="light_circuits"></div>
+                            <div><label class="text-sm">จำนวนวงจรแสงสว่าง</label><input type="number" class="form-input" id="light_circuits" placeholder="0"></div>
                             <div><label class="text-sm">รูปแบบ</label><select class="form-input" id="light_type"><option value="surface_pvc">ท่อ PVC ลอย</option><option value="concealed_pvc">ท่อ PVC ฝัง</option></select></div>
-                            <div class="col-span-2"><label class="text-sm">โคมไฟ</label><select class="form-input" id="fixture_type_1"><option value="LED_E27">ดาวน์ไลท์ E27</option><option value="LED_PANEL">LED Panel</option></select></div>
+                            <div class="col-span-2"><label class="text-sm">โคมไฟ</label><select class="form-input" id="fixture_type_1"><option value="LED_E27">ดาวน์ไลท์ E27</option><option value="LED_PANEL">LED Panel</option><option value="T8_SET">ชุดราง T8</option></select></div>
                         </div>
                         <div id="light_circuits_container" class="mt-2 space-y-2"></div>
                     </div>
                     <!-- เต้ารับ -->
-                    <div class="bg-slate-50 p-3 rounded">
+                    <div class="bg-slate-50 p-3 rounded border">
                         <div class="grid grid-cols-2 gap-4">
-                            <div><label class="text-sm">จำนวนวงจรเต้ารับ</label><input type="number" class="form-input" id="socket_circuits"></div>
+                            <div><label class="text-sm">จำนวนวงจรเต้ารับ</label><input type="number" class="form-input" id="socket_circuits" placeholder="0"></div>
                             <div><label class="text-sm">รูปแบบ</label><select class="form-input" id="socket_type"><option value="surface_pvc">ท่อ PVC ลอย</option><option value="surface_vaf">ตีกิ๊ป VAF</option></select></div>
                         </div>
                         <div id="socket_circuits_container" class="mt-2 space-y-2"></div>
@@ -126,15 +137,15 @@
             <div class="config-card collapsible-card">
                 <h3 class="text-xl font-bold mb-4 text-slate-700">❄️ แอร์/น้ำอุ่น</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label class="text-sm">แอร์ (เครื่อง)</label><input type="number" class="form-input" id="ac_units"></div>
+                    <div><label class="text-sm">แอร์ (เครื่อง)</label><input type="number" class="form-input" id="ac_units" placeholder="0"></div>
                     <div><label class="text-sm">รูปแบบ</label><select class="form-input" id="ac_install_type_4"><option value="surface_pvc">ท่อ PVC ลอย</option></select></div>
                     <div><label class="text-sm">สายไฟแอร์ (ม./เครื่อง)</label><input type="number" class="form-input" id="ac_distance" value="15"></div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4 mt-4">
-                    <div><label class="text-sm">น้ำอุ่น (เครื่อง)</label><input type="number" class="form-input" id="heater_units"></div>
+                    <div><label class="text-sm">น้ำอุ่น (เครื่อง)</label><input type="number" class="form-input" id="heater_units" placeholder="0"></div>
                     <div><label class="text-sm">รูปแบบ</label><select class="form-input" id="wh_install_type_5"><option value="surface_pvc">ท่อ PVC ลอย</option></select></div>
                     <div><label class="text-sm">สายไฟน้ำอุ่น (ม./เครื่อง)</label><input type="number" class="form-input" id="heater_distance" value="15"></div>
-                    <div class="flex items-center"><input type="checkbox" id="heater_exclude_hoses" class="mr-2"> <label class="text-sm">ไม่รวมสายน้ำดี</label></div>
+                    <div class="flex items-center"><input type="checkbox" id="heater_exclude_hoses" class="mr-2 w-5 h-5"> <label class="text-sm">ไม่รวมสายน้ำดี</label></div>
                 </div>
             </div>
 
@@ -143,8 +154,8 @@
                 <h3 class="text-xl font-bold mb-4 text-slate-700">🛠️ งานบริการ/EV/รื้อถอน</h3>
                 <div class="space-y-4">
                     <!-- EV -->
-                    <div class="p-3 border rounded">
-                        <label><input type="checkbox" id="toggle_ev_charger_visibility"> ติดตั้ง EV Charger</label>
+                    <div class="p-3 border rounded bg-blue-50">
+                        <label class="font-bold flex items-center gap-2 cursor-pointer"><input type="checkbox" id="toggle_ev_charger_visibility" class="w-5 h-5"> ติดตั้ง EV Charger</label>
                         <div id="ev_charger_content_wrapper" class="hidden mt-2 grid grid-cols-2 gap-2">
                             <input type="number" id="ev_cable_dist_8" class="form-input" placeholder="ระยะสาย (ม.)" value="20">
                             <input type="number" id="ev_charger_cost_8" class="form-input" placeholder="ค่าเครื่อง" value="35000">
@@ -160,7 +171,7 @@
                             <input type="number" id="demo_cables_9" class="form-input" placeholder="สาย (ม.)">
                             <input type="number" id="demo_ac_9" class="form-input" placeholder="แอร์ (เครื่อง)">
                         </div>
-                        <label class="mt-2 block text-xs"><input type="checkbox" id="demo_include_repair_9"> รวมค่าซ่อมผนัง</label>
+                        <label class="mt-2 block text-xs flex items-center gap-2"><input type="checkbox" id="demo_include_repair_9" class="w-4 h-4"> รวมค่าซ่อมผนัง</label>
                     </div>
                 </div>
             </div>
@@ -169,12 +180,12 @@
         <!-- Right: Summary -->
         <div class="lg:col-span-1 space-y-6">
             <div class="sticky top-4">
-                <section class="bg-white p-6 rounded-lg shadow-lg">
-                    <h2 class="text-2xl font-bold mb-4 text-blue-600">ตั้งค่าราคา</h2>
+                <section class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-amber-400">
+                    <h2 class="text-2xl font-bold mb-4 text-slate-700">สรุปราคา</h2>
                     <div class="space-y-3">
                         <div><label class="text-sm">จังหวัด</label><select class="form-input" id="province_selector"></select></div>
                         <div id="bkk_zone_container" class="hidden"><label class="text-sm">โซน กทม.</label><select class="form-input" id="bkk_zone_selector"><option value="BKK_Zone5_Suburban">ชานเมือง</option><option value="BKK_Zone1_CBD">ในเมือง</option></select></div>
-                        <div class="flex items-center gap-2"><input type="checkbox" id="include_vat"><label class="text-sm">คิด VAT 7%</label></div>
+                        <div class="flex items-center gap-2"><input type="checkbox" id="include_vat" class="w-5 h-5"><label class="text-sm font-bold">คิด VAT 7%</label></div>
                         <div class="grid grid-cols-2 gap-2">
                             <div><label class="text-xs">ดำเนินการ %</label><input class="form-input" id="overhead_factor" type="number" value="0"></div>
                             <div><label class="text-xs">กำไร %</label><input class="form-input" id="profit_factor" type="number" value="0"></div>
@@ -183,18 +194,23 @@
                         <div><label class="text-xs">เผื่อวัสดุ %</label><input class="form-input" id="wastage_factor" type="number" value="0"></div>
                         <div><label class="text-xs">ขั้นต่ำ (บาท)</label><input class="form-input" id="min_charge" type="number" value="1000"></div>
                     </div>
-                </section>
 
-                <section class="bg-white p-6 rounded-xl shadow-xl text-center mt-4">
-                    <p class="text-lg text-slate-500">ยอดรวมสุทธิ</p>
-                    <p class="text-4xl font-bold text-blue-600 my-2" id="total-display">฿0.00</p>
-                    <button class="btn btn-primary w-full mt-2" id="calculate-btn">สร้างเอกสาร</button>
-                    <button class="btn btn-secondary w-full mt-2" id="reset-btn">รีเซ็ต</button>
+                    <div class="mt-6 text-center bg-slate-50 p-4 rounded-lg">
+                        <p class="text-sm text-slate-500">ยอดรวมสุทธิ</p>
+                        <p class="text-4xl font-bold text-blue-600 my-2" id="total-display">฿0.00</p>
+                    </div>
+                    
+                    <button class="btn btn-primary w-full mt-4 justify-center text-lg" id="calculate-btn">
+                        📄 คำนวณและสร้างเอกสาร
+                    </button>
+                    <button class="btn btn-secondary w-full mt-2 justify-center" id="reset-btn">
+                        🔄 ล้างข้อมูล
+                    </button>
                 </section>
                 
                 <!-- Price Editor -->
-                <section class="bg-white p-4 rounded-lg shadow mt-6 max-h-60 overflow-y-auto">
-                    <h3 class="font-bold mb-2 text-sm">ฐานข้อมูลราคา (แก้ไขได้)</h3>
+                <section class="bg-white p-4 rounded-lg shadow mt-6 max-h-80 overflow-y-auto">
+                    <h3 class="font-bold mb-2 text-sm text-slate-600">ฐานข้อมูลราคา (แก้ไขได้)</h3>
                     <table class="w-full text-xs">
                         <tbody id="price-editor-body"></tbody>
                     </table>
@@ -204,43 +220,59 @@
     </main>
 
     <!-- Output Section -->
-    <section class="mt-12 bg-white p-6 rounded-lg shadow-lg hidden" id="output-section">
-        <div class="flex justify-between items-center border-b pb-2 mb-4 no-print">
-            <h2 class="text-2xl font-bold text-blue-600">เอกสารใบเสนอราคา</h2>
+    <section class="mt-12 bg-white p-8 rounded-lg shadow-lg hidden" id="output-section">
+        <div class="flex justify-between items-center border-b pb-4 mb-6 no-print">
+            <h2 class="text-3xl font-bold text-blue-600">เอกสารประมาณราคา</h2>
             <div class="flex gap-2">
-                <button id="print-btn" class="btn btn-secondary text-sm">พิมพ์</button>
+                <button id="print-btn" class="btn btn-secondary text-sm">🖨️ พิมพ์</button>
+                <button id="save-pdf-btn" class="btn btn-danger text-sm">📄 บันทึก PDF</button>
+                <button id="save-image-btn" class="btn btn-success text-sm">📸 บันทึกภาพ</button>
             </div>
         </div>
         
         <!-- Manual Item Adder -->
-        <div class="no-print p-4 bg-gray-50 rounded mb-4 border">
-             <h4 class="font-bold text-sm mb-2">เพิ่มรายการพิเศษ (Manual)</h4>
-             <div class="grid grid-cols-4 gap-2">
-                 <div class="col-span-2"><input type="text" id="manual-job-name" class="form-input text-sm" placeholder="ชื่องาน"></div>
-                 <div><input type="number" id="manual-job-labor-total" class="form-input text-sm" placeholder="ราคา"></div>
-                 <div><button id="manual-job-add-btn" class="btn btn-primary text-sm w-full">+</button></div>
+        <div class="no-print p-4 bg-yellow-50 rounded-lg mb-6 border border-yellow-200">
+             <h4 class="font-bold text-md text-yellow-800 mb-3">➕ เพิ่มรายการพิเศษ (Manual)</h4>
+             <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                 <div class="md:col-span-2"><label class="text-xs">รายการ</label><input type="text" id="manual-job-name" class="form-input text-sm" placeholder="เช่น ค่าแรงพิเศษ, งานเก็บสี"></div>
+                 <div><label class="text-xs">ราคาเหมา (บาท)</label><input type="number" id="manual-job-labor-total" class="form-input text-sm" placeholder="0"></div>
+                 <div><label class="text-xs">จำนวน</label><input type="number" id="manual-job-qty" class="form-input text-sm" value="1"></div>
+                 <div><button id="manual-job-add-btn" class="btn btn-primary text-sm w-full justify-center">เพิ่ม</button></div>
              </div>
-             <!-- Hidden fields for compatibility -->
-             <input type="hidden" id="manual-job-qty" value="1">
+             <!-- Hidden helper fields -->
              <input type="hidden" id="manual-job-unit" value="งาน">
              <table id="manual-job-materials-table" class="hidden"><tbody></tbody></table>
              <button id="manual-job-add-material-row" class="hidden"></button>
         </div>
 
-        <div id="report-content"></div>
+        <!-- Tabs -->
+        <div class="no-print border-b mb-6 overflow-x-auto">
+            <nav class="flex space-x-6 min-w-max">
+                <button class="tab-btn tab-active py-2 border-b-2 border-blue-600 font-bold text-blue-600" data-tab="boq-combined">📋 BOQ รวม</button>
+                <button class="tab-btn py-2 text-gray-500 hover:text-blue-600" data-tab="boq-labor">👷 BOQ ค่าแรง</button>
+                <button class="tab-btn py-2 text-gray-500 hover:text-blue-600" data-tab="boq-material">📦 BOQ ค่าวัสดุ</button>
+                <button class="tab-btn py-2 text-gray-500 hover:text-blue-600" data-tab="purchase-order">🛒 ใบสั่งซื้อ</button>
+            </nav>
+        </div>
+        
+        <!-- Report Area -->
+        <div id="report-container" class="bg-white p-4 min-h-[600px]">
+            <div id="report-content"></div>
+        </div>
     </section>
     
+    <!-- Hidden Print Container -->
     <div id="print-area" class="hidden"></div>
 </div>
 
 <script>
 // ==========================================
-// 1. CORE SYSTEM & UTILITIES (ROBUST)
+// 1. CORE SYSTEM & UTILITIES (Robust Version)
 // ==========================================
 
 const GITHUB_DATA_URL = "https://raw.githubusercontent.com/tanthaitanium21-dot/appp/refs/heads/main/data.json";
 
-// Safe DOM Access Helpers (หัวใจสำคัญของการป้องกัน Error)
+// Safe DOM Access Helpers
 const el = (id) => document.getElementById(id);
 const val = (id) => {
     const element = el(id);
@@ -293,14 +325,13 @@ async function loadData() {
         });
         
         statusBadge.className = "status-badge status-success";
-        statusBadge.innerHTML = "✅ พร้อมใช้งาน";
+        statusBadge.innerHTML = "✅ พร้อมใช้งาน (Online)";
         renderUI();
         
     } catch (error) {
         console.error("Load Error:", error);
         statusBadge.className = "status-badge status-error";
-        statusBadge.innerHTML = "❌ โหลดข้อมูลไม่สำเร็จ (ใช้โหมด Offline)";
-        // Fallback data structure could go here if needed
+        statusBadge.innerHTML = "❌ โหลดข้อมูลไม่สำเร็จ (Offline Mode)";
     }
 }
 
@@ -320,7 +351,7 @@ function renderPriceList() {
     let html = '';
     for (const [key, price] of Object.entries(priceList)) {
         const desc = allItems.get(key)?.desc || key;
-        html += `<tr class="border-b"><td class="p-2 text-slate-600">${key}<br><small class="text-gray-400">${desc}</small></td><td class="p-2 text-right"><input type="number" class="w-20 text-right border rounded bg-gray-50 px-1" value="${price}" onchange="updatePrice('${key}', this.value)"></td></tr>`;
+        html += `<tr class="border-b border-gray-100 hover:bg-gray-50"><td class="p-2 text-slate-600"><span class="font-mono text-xs font-bold text-blue-600">${key}</span><br><span class="text-xs text-gray-400">${desc.substring(0,30)}...</span></td><td class="p-2 text-right"><input type="number" class="w-20 text-right border rounded bg-white px-1 py-1 text-sm focus:ring-2 focus:ring-blue-200 outline-none" value="${price}" onchange="updatePrice('${key}', this.value)"></td></tr>`;
     }
     tbody.innerHTML = html;
 }
@@ -331,33 +362,34 @@ window.updatePrice = (key, v) => {
 };
 
 // ==========================================
-// 3. CALCULATION ENGINE (ROBUST)
+// 3. CALCULATION ENGINE
 // ==========================================
 function buildTaskQuantities() {
     const quantities = new Map();
     const add = (id, v) => quantities.set(id, (quantities.get(id) || 0) + v);
 
-    // --- 1. Circuits (Socket & Light) ---
+    // --- 1. Circuits ---
     ['socket', 'light'].forEach(prefix => {
         const count = val(`${prefix}_circuits`);
         const type = str(`${prefix}_type`);
         if (count > 0) {
-            // Logic Simplified for robustness: Avg distance 15m per circuit if detailed inputs missing
-            // In full version, this iterates through dynamic inputs. 
-            // Here we protect against missing dynamic inputs.
             for(let i=1; i<=count; i++) {
-                // Try to get specific dist, else default
                 const panelDist = val(`${prefix}_circuit_${i}_panel_dist`) || 10; 
                 const points = val(`${prefix}_circuit_${i}_points`) || 1;
-                const wiring = panelDist + (points * 3); // Approx
+                const wiring = panelDist + (points * 3); 
                 
                 if(prefix === 'socket') {
                     if(type.includes('vaf')) { add('1.3', wiring); add('3.1', points); }
-                    else { add('1.1', wiring); add('2.1', wiring); add('3.1', points); } // Default to PVC Surface
+                    else { 
+                        add('1.1', wiring); 
+                        add(type.includes('concealed') ? '2.3' : '2.1', wiring); 
+                        add(type.includes('concealed') ? '3.2' : '3.1', points); 
+                    }
                 } else {
                     add('1.2', wiring); add('2.1', wiring); 
                     const fixType = str('fixture_type_1');
                     if(fixType === 'LED_PANEL') add('15.1', points);
+                    else if(fixType === 'T8_SET') add('15.2', points);
                     else add('4.1', points);
                 }
             }
@@ -369,8 +401,6 @@ function buildTaskQuantities() {
     if(acCount > 0) {
         add('5.1', acCount);
         const dist = val('ac_distance') || 15;
-        add('5.2', dist * acCount); // Assume wiring task exists or map to components
-        // Add Breaker/Wiring logic
         add('1.4', dist * acCount);
         add('2.1', dist * acCount);
     }
@@ -379,20 +409,48 @@ function buildTaskQuantities() {
     if(heaterCount > 0) {
         add('7.1', heaterCount);
         const dist = val('heater_distance') || 15;
-        add('1.4', dist * heaterCount); // Wiring
-        add('2.1', dist * heaterCount); // Pipe
+        add('1.4', dist * heaterCount);
+        add('2.1', dist * heaterCount);
     }
+    
+    const pumpCount = val('pump_units');
+    if(pumpCount > 0) add('5.3', pumpCount);
+    
+    const fanCount = val('fan_units');
+    if(fanCount > 0) add('5.4', fanCount);
 
     // --- 3. Main Power ---
     const poles = val('pole_count_7');
-    if(poles > 0) add('17.1', poles); // Default 6m
+    const pHeight = str('pole_height_7');
+    if(poles > 0 && pHeight !== '0') {
+        if(pHeight === '6.0') add('17.1', poles);
+        else if(pHeight === '7.0') add('17.1-B', poles);
+        else if(pHeight === '8.0') add('17.2', poles);
+        else add('17.3', poles);
+    }
+    
+    add('17.4-2', val('rack_2_sets_7'));
+    add('17.4-4', val('rack_4_sets_7'));
     
     const mainDist = val('main_ext_dist_7');
     if(mainDist > 0) add('17.5', mainDist);
 
-    // --- 4. Service/Demo ---
+    // --- 4. Systems ---
+    if(val('lan_points') > 0) { add('11.1', val('lan_points')); add('11.2', val('lan_distance')); }
+    if(val('tv_points') > 0) { add('11.3', val('tv_points')); add('11.4', val('tv_distance')); }
+    add('11.5', val('cctv_points'));
+    
+    // --- 5. Service/Demo ---
     add('19.1', val('demo_lights_9'));
     add('19.2', val('demo_outlets_9'));
+    add('19.3', val('demo_cables_9'));
+    add('19.4', val('demo_ac_9'));
+    
+    // --- 6. EV ---
+    if(isChecked('toggle_ev_charger_visibility')) {
+        add('18.1', 1);
+        if(str('ev_install_type_8') === 'new_meter_tou') add('18.2', 1);
+    }
 
     return quantities;
 }
@@ -401,19 +459,42 @@ function calculateTotal() {
     if (!appData || !priceList) return;
 
     const qtys = buildTaskQuantities();
-    const results = { material: 0, labor: 0, total: 0, items: [] };
+    const results = { material: 0, labor: 0, total: 0, combined: [], purchaseOrder: {} };
     const quality = val('material_quality') || 1.0;
 
     // Calculate Tasks
     for (const [taskId, qty] of qtys.entries()) {
         const task = allTasks.get(taskId);
-        if(!task) continue; // Skip unknown tasks
+        if(!task) continue; 
 
         let matCost = 0;
-        task.material_components?.forEach(m => {
-            const p = (priceList[m.material_id] || 0) * quality;
-            matCost += p; // Simplified: assume 1 unit per task unit for safety
-        });
+        // Special Logic for Main Cable
+        if (taskId === '17.5') {
+            const auth = str('main_authority_7') || 'PEA';
+            const meter = str('meter_size_3') || '15(45)';
+            const type = str('main_ext_type_7') || 'THW';
+            let size = 0;
+            try { size = appData.mainCableSpecs_v5_1[auth][meter][type]; } catch(e){}
+            
+            if(size > 0) {
+                const cableId = `M-CABLE-${type}-${size}`;
+                const p = (priceList[cableId] || 0) * quality;
+                matCost += p * 2; // L+N
+                
+                // Add to PO
+                if(!results.purchaseOrder[cableId]) results.purchaseOrder[cableId] = { description: `สายเมน ${type} ${size}`, spec: cableId, unit: 'เมตร', quantity: 0, unit_price: p };
+                results.purchaseOrder[cableId].quantity += (qty * 2);
+            }
+        } else {
+            // Standard Logic
+            task.material_components?.forEach(m => {
+                const p = (priceList[m.material_id] || 0) * quality;
+                matCost += p; 
+                
+                if(!results.purchaseOrder[m.material_id]) results.purchaseOrder[m.material_id] = { description: allItems.get(m.material_id)?.desc || m.material_id, spec: m.spec, unit: 'หน่วย', quantity: 0, unit_price: p };
+                results.purchaseOrder[m.material_id].quantity += qty;
+            });
+        }
         
         let labCost = 0;
         task.labor_components?.forEach(l => {
@@ -422,13 +503,20 @@ function calculateTotal() {
 
         results.material += matCost * qty;
         results.labor += labCost * qty;
-        results.items.push({ name: task.task_name, qty, unit: task.unit_of_measure, mat: matCost, lab: labCost });
+        
+        results.combined.push({ 
+            description: task.task_name, 
+            quantity: qty, 
+            unit: task.unit_of_measure, 
+            material_unit_cost: matCost, 
+            labor_unit_cost: labCost 
+        });
     }
 
     // Manual Items
     manualBOQItems.forEach(item => {
         results.labor += item.price;
-        results.items.push({ name: item.name, qty: 1, unit: 'งาน', mat: 0, lab: item.price });
+        results.combined.push({ description: item.name, quantity: 1, unit: 'งาน', material_unit_cost: 0, labor_unit_cost: item.price });
     });
 
     // Factors
@@ -438,24 +526,37 @@ function calculateTotal() {
     const minCharge = val('min_charge');
 
     let grand = results.material + results.labor;
-    grand += grand * (overhead/100);
-    grand += grand * (profit/100);
-    if(grand < minCharge) grand = minCharge;
+    results.overheadAmount = grand * (overhead/100);
+    grand += results.overheadAmount;
     
-    const final = grand * (1 + vat);
+    results.profitAmount = grand * (profit/100);
+    grand += results.profitAmount;
+    
+    if(grand < minCharge) {
+        results.minChargeAdjustment = minCharge - grand;
+        grand = minCharge;
+    } else {
+        results.minChargeAdjustment = 0;
+    }
+    
+    results.vatAmount = grand * vat;
+    results.grandTotal = grand + results.vatAmount;
+    
+    results.totalMaterialCost = results.material;
+    results.totalLaborCost = results.labor;
+    results.totalWithVat = results.grandTotal;
     
     // Display
     const display = el('total-display');
-    if(display) display.textContent = `฿${final.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
+    if(display) display.textContent = `฿${results.grandTotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
     
-    return { ...results, grand: final };
+    return results;
 }
 
 // ==========================================
 // 4. UI INTERACTION & EVENTS
 // ==========================================
 
-// Dynamic Circuit Rendering (Simplified for Robustness)
 function renderCircuits(prefix, count) {
     const container = el(`${prefix}_circuits_container`);
     if(!container) return;
@@ -463,43 +564,46 @@ function renderCircuits(prefix, count) {
     let html = '';
     for(let i=1; i<=count; i++) {
         html += `
-        <div class="p-3 bg-white rounded border mt-2">
-            <p class="font-bold text-xs text-slate-500">วงจรที่ ${i}</p>
-            <div class="grid grid-cols-2 gap-2 mt-1">
-                <input type="number" id="${prefix}_circuit_${i}_panel_dist" class="form-input text-sm" placeholder="ระยะทาง (ม.)" oninput="updatePrice()">
-                <input type="number" id="${prefix}_circuit_${i}_points" class="form-input text-sm" placeholder="จำนวนจุด" oninput="updatePrice()">
+        <div class="p-3 bg-white rounded border mt-2 shadow-sm">
+            <p class="font-bold text-xs text-blue-600 uppercase tracking-wider mb-2">วงจรที่ ${i}</p>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-xs text-slate-500 block mb-1">ระยะทาง (ม.)</label>
+                    <input type="number" id="${prefix}_circuit_${i}_panel_dist" class="form-input text-sm w-full" placeholder="0" oninput="updatePrice()">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500 block mb-1">จำนวนจุด</label>
+                    <input type="number" id="${prefix}_circuit_${i}_points" class="form-input text-sm w-full" placeholder="0" oninput="updatePrice()">
+                </div>
             </div>
         </div>`;
     }
     container.innerHTML = html;
 }
 
-// Reset Form (The Fix!)
 function resetForm() {
-    // 1. Clear Inputs Safe Way
+    // Safe Reset
     document.querySelectorAll('input[type="number"], input[type="text"]').forEach(inp => {
-        const id = inp.id;
-        // Skip config fields
-        if(!['min_charge', 'overhead_factor', 'profit_factor', 'wastage_factor'].includes(id)) {
+        if(!['min_charge', 'overhead_factor', 'profit_factor', 'wastage_factor', 'ev_charger_cost_8'].includes(inp.id)) {
             inp.value = '';
         }
     });
-    
-    // 2. Clear Checkboxes
     document.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
+    document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
     
-    // 3. Clear Containers
-    ['socket', 'light', 'ac_wiring', 'heater_wiring'].forEach(p => {
+    ['socket', 'light'].forEach(p => {
         const c = el(`${p}_circuits_container`);
         if(c) c.innerHTML = '';
     });
     
-    // 4. Clear Manual Items
     manualBOQItems = [];
-    
-    // 5. Hide Sections
     el('output-section').classList.add('hidden');
     el('ev_charger_content_wrapper').classList.add('hidden');
+    
+    // Defaults
+    setVal('min_charge', 1000);
+    setVal('report_date', new Date().toISOString().split('T')[0]);
+    setVal('province_selector', 'นนทบุรี');
     
     calculateTotal();
 }
@@ -508,30 +612,21 @@ function resetForm() {
 document.addEventListener('DOMContentLoaded', () => {
     loadData();
     
-    // Global Listeners
     document.body.addEventListener('input', (e) => {
-        if(e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
-            calculateTotal();
-        }
-        
-        // Circuit Generators
+        if(e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') calculateTotal();
         if(e.target.id === 'socket_circuits') renderCircuits('socket', val('socket_circuits'));
         if(e.target.id === 'light_circuits') renderCircuits('light', val('light_circuits'));
     });
     
     // Buttons
     el('calculate-btn').addEventListener('click', () => {
-        const data = calculateTotal();
-        generateReportHTML(data);
+        const data = calculateCosts();
+        displayReport(data);
         el('output-section').classList.remove('hidden');
         el('output-section').scrollIntoView({behavior:'smooth'});
     });
     
-    el('reset-btn').addEventListener('click', () => {
-        if(confirm("ล้างข้อมูลทั้งหมด?")) resetForm();
-    });
-    
-    el('print-btn').addEventListener('click', () => window.print());
+    el('reset-btn').addEventListener('click', () => { if(confirm("ล้างข้อมูลทั้งหมด?")) resetForm(); });
     
     // Manual Add
     el('manual-job-add-btn').addEventListener('click', () => {
@@ -546,11 +641,66 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    // Print / PDF / Image Handlers
+    el('print-btn').addEventListener('click', () => {
+        window.print();
+    });
+
+    el('save-pdf-btn').addEventListener('click', async () => {
+        const btn = el('save-pdf-btn');
+        const originalText = btn.textContent;
+        btn.textContent = '⏳ กำลังสร้าง PDF...';
+        btn.disabled = true;
+        
+        const { jsPDF } = window.jspdf;
+        const report = el('report-container');
+        
+        try {
+            const canvas = await html2canvas(report, { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`BOQ-${str('project_name') || 'Project'}.pdf`);
+        } catch (e) {
+            alert('เกิดข้อผิดพลาดในการสร้าง PDF');
+            console.error(e);
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    });
+
+    el('save-image-btn').addEventListener('click', () => {
+        const report = el('report-container');
+        html2canvas(report).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `BOQ-${str('project_name') || 'Project'}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    });
+
+    // Tab Switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('tab-active', 'border-blue-600', 'text-blue-600');
+                b.classList.add('text-gray-500');
+            });
+            e.target.classList.add('tab-active', 'border-blue-600', 'text-blue-600');
+            e.target.classList.remove('text-gray-500');
+            
+            displayReport(calculateCosts(), e.target.dataset.tab);
+        });
+    });
+    
     // EV Toggle
     el('toggle_ev_charger_visibility').addEventListener('change', (e) => {
         const div = el('ev_charger_content_wrapper');
-        if(e.target.checked) div.classList.remove('hidden');
-        else div.classList.add('hidden');
+        if(e.target.checked) div.classList.remove('hidden'); else div.classList.add('hidden');
     });
     
     // Accordion
@@ -559,19 +709,96 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Report Generation
-function generateReportHTML(data) {
+// --- Report Generation ---
+function displayReport(costs, tab = 'boq-combined') {
     const container = el('report-content');
-    let html = `<table class="w-full text-sm border-collapse"><tr class="bg-gray-100"><th class="p-2 border text-left">รายการ</th><th class="p-2 border text-center">จำนวน</th><th class="p-2 border text-right">รวม</th></tr>`;
+    const projName = str('project_name') || '-';
+    const custName = str('customer_name') || '-';
+    const date = str('report_date') || '-';
     
-    data.items.forEach((item, idx) => {
-        if(item.qty > 0) {
-            html += `<tr><td class="p-2 border">${idx+1}. ${item.name}</td><td class="p-2 border text-center">${item.qty} ${item.unit}</td><td class="p-2 border text-right">${(item.mat+item.lab).toLocaleString()}</td></tr>`;
-        }
-    });
+    let header = `
+        <div class="mb-6 border-b pb-4">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-2xl font-bold text-blue-800">ใบเสนอราคา / BOQ</h1>
+                    <p class="text-sm text-gray-500">งานระบบไฟฟ้ามาตรฐาน V6</p>
+                </div>
+                <div class="text-right text-sm text-gray-600">
+                    <p><strong>โครงการ:</strong> ${projName}</p>
+                    <p><strong>ลูกค้า:</strong> ${custName}</p>
+                    <p><strong>วันที่:</strong> ${date}</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    let content = '';
     
-    html += `<tr class="font-bold bg-blue-50"><td colspan="2" class="p-2 border text-right">รวมสุทธิ</td><td class="p-2 border text-right">${data.grand.toLocaleString()}</td></tr></table>`;
-    container.innerHTML = html;
+    if (tab === 'boq-combined') {
+        content = `<table class="w-full text-sm border-collapse border border-slate-200">
+            <tr class="bg-slate-100 text-slate-700">
+                <th class="p-2 border text-left">รายการ</th>
+                <th class="p-2 border text-center">จำนวน</th>
+                <th class="p-2 border text-right">ค่าวัสดุ</th>
+                <th class="p-2 border text-right">ค่าแรง</th>
+                <th class="p-2 border text-right">รวม</th>
+            </tr>`;
+        costs.combined.forEach(item => {
+             content += `<tr>
+                <td class="p-2 border">${item.description}</td>
+                <td class="p-2 border text-center">${item.quantity} ${item.unit}</td>
+                <td class="p-2 border text-right">${formatCurrency(item.material_unit_cost * item.quantity)}</td>
+                <td class="p-2 border text-right">${formatCurrency(item.labor_unit_cost * item.quantity)}</td>
+                <td class="p-2 border text-right font-bold">${formatCurrency((item.material_unit_cost + item.labor_unit_cost) * item.quantity)}</td>
+             </tr>`;
+        });
+        
+        content += `<tr class="bg-slate-50 font-bold text-slate-800">
+            <td colspan="4" class="p-2 border text-right">รวมค่าวัสดุและค่าแรง</td>
+            <td class="p-2 border text-right">${formatCurrency(costs.material + costs.labor)}</td>
+        </tr>`;
+        
+        if(costs.overheadAmount > 0) content += `<tr><td colspan="4" class="p-2 border text-right text-gray-500">ค่าดำเนินการ</td><td class="p-2 border text-right">${formatCurrency(costs.overheadAmount)}</td></tr>`;
+        if(costs.profitAmount > 0) content += `<tr><td colspan="4" class="p-2 border text-right text-gray-500">กำไร</td><td class="p-2 border text-right">${formatCurrency(costs.profitAmount)}</td></tr>`;
+        if(costs.vatAmount > 0) content += `<tr><td colspan="4" class="p-2 border text-right text-gray-500">VAT 7%</td><td class="p-2 border text-right">${formatCurrency(costs.vatAmount)}</td></tr>`;
+        
+        content += `<tr class="bg-blue-600 text-white font-bold text-lg">
+            <td colspan="4" class="p-3 border text-right">รวมสุทธิ</td>
+            <td class="p-3 border text-right">${formatCurrency(costs.totalWithVat)} บาท</td>
+        </tr></table>`;
+        
+    } else if (tab === 'purchase-order') {
+        content = `<table class="w-full text-sm border-collapse border border-slate-200">
+            <tr class="bg-slate-100 text-slate-700">
+                <th class="p-2 border text-left">รหัสสินค้า</th>
+                <th class="p-2 border text-left">รายการ</th>
+                <th class="p-2 border text-center">จำนวน</th>
+                <th class="p-2 border text-right">ราคา/หน่วย</th>
+                <th class="p-2 border text-right">รวม</th>
+            </tr>`;
+        
+        Object.entries(costs.purchaseOrder).forEach(([id, item]) => {
+            if(item.quantity > 0) {
+                content += `<tr>
+                    <td class="p-2 border font-mono text-xs text-gray-500">${id}</td>
+                    <td class="p-2 border">${item.description} <span class="text-xs text-gray-400 block">${item.spec}</span></td>
+                    <td class="p-2 border text-center">${Math.ceil(item.quantity)} ${item.unit}</td>
+                    <td class="p-2 border text-right">${formatCurrency(item.unit_price)}</td>
+                    <td class="p-2 border text-right">${formatCurrency(item.unit_price * item.quantity)}</td>
+                </tr>`;
+            }
+        });
+        content += `</table>`;
+        
+    } else {
+        content = `<div class="p-8 text-center text-gray-400 border-2 border-dashed rounded">ส่วนนี้กำลังพัฒนา (ใช้ BOQ รวมไปก่อนนะครับ)</div>`;
+    }
+
+    container.innerHTML = header + content;
+}
+
+function formatCurrency(num) {
+    return num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 </script>

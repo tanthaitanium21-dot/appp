@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>'ราคากลาง'งานไฟฟ้าภายในบ้าน V6 (Hybrid Final)</title>
+    <title>'ราคากลาง'งานไฟฟ้าภายในบ้าน V6 (Hybrid Master)</title>
     
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,13 +18,14 @@
         .config-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07); }
         .form-input { border-radius: 0.5rem; border: 1px solid #cbd5e1; width: 100%; padding: 0.5rem; transition: border 0.2s; }
         .form-input:focus { border-color: #3b82f6; outline: none; ring: 2px; ring-color: #bfdbfe; }
-        .btn { border-radius: 0.5rem; font-weight: 700; padding: 0.75rem 1rem; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; }
+        .btn { border-radius: 0.5rem; font-weight: 700; padding: 0.75rem 1rem; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; justify-content: center; }
         .btn:hover { transform: translateY(-1px); }
         .btn-primary { background-image: linear-gradient(to right, #3b82f6, #2563eb); color: white; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5); }
         .btn-secondary { background-color: #475569; color: white; }
         .btn-danger { background-color: #ef4444; color: white; }
         .btn-success { background-color: #10b981; color: white; }
-        
+        .btn-delete-row { background-color: #fee2e2; color: #ef4444; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; font-size: 12px; }
+
         /* Status Badge */
         .status-badge { position: fixed; top: 10px; right: 10px; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; z-index: 9999; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .status-loading { background-color: #e0f2fe; color: #0369a1; border: 1px solid #38bdf8; }
@@ -47,12 +48,12 @@
 </head>
 <body class="antialiased pb-20">
 
-<div id="system-status" class="status-badge status-loading">⏳ กำลังเชื่อมต่อข้อมูล...</div>
+<div id="system-status" class="status-badge status-loading">⏳ กำลังเชื่อมต่อฐานข้อมูล...</div>
 
 <div class="container mx-auto p-4 md:p-8">
     <header class="text-center mb-10 no-print">
         <h1 class="text-4xl md:text-5xl font-bold text-blue-600 tracking-tight">'ราคากลาง' งานไฟฟ้า V6 <span class="text-amber-500">Hybrid</span></h1>
-        <p class="text-xl text-slate-500 mt-2">โปรแกรมคำนวณสำหรับช่างไฟฟ้ายุคใหม่ (เชื่อมต่อ GitHub)</p>
+        <p class="text-xl text-slate-500 mt-2">โปรแกรมคำนวณสำหรับช่างไฟฟ้ายุคใหม่ (GitHub Database)</p>
     </header>
 
     <!-- ข้อมูลโครงการ -->
@@ -153,6 +154,13 @@
             <div class="config-card collapsible-card">
                 <h3 class="text-xl font-bold mb-4 text-slate-700">🛠️ งานบริการ/EV/รื้อถอน</h3>
                 <div class="space-y-4">
+                    <!-- ปั๊ม/พัดลม -->
+                    <div class="p-3 border rounded">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="text-sm">ปั๊มน้ำ (เครื่อง)</label><input type="number" class="form-input" id="pump_units" placeholder="0"></div>
+                            <div><label class="text-sm">พัดลม (เครื่อง)</label><input type="number" class="form-input" id="fan_units" placeholder="0"></div>
+                        </div>
+                    </div>
                     <!-- EV -->
                     <div class="p-3 border rounded bg-blue-50">
                         <label class="font-bold flex items-center gap-2 cursor-pointer"><input type="checkbox" id="toggle_ev_charger_visibility" class="w-5 h-5"> ติดตั้ง EV Charger</label>

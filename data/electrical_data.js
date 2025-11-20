@@ -1,325 +1,166 @@
-// main.js
-// เวอร์ชันสมบูรณ์: รองรับ Manual Cable / Dynamic Inputs / New Rack
+// data/electrical_data.js
+// ข้อมูลงานไฟฟ้าและราคา (ฉบับสมบูรณ์: กู้คืนข้อมูลครบถ้วน + เพิ่มของใหม่)
 
-import { provinces } from './data/provinces.js';
-import { calculateProjectCost, getPriceList, setPrice, getAllItems } from './modules/calculator.js';
-import { renderCircuitInputs, renderDedicatedCircuitInputs, renderDynamicInputs, formatCurrency } from './modules/ui_renderer.js';
-import { generateReport } from './modules/report_generator.js';
-import { renderProjectInfoCard, renderWorkDetails, renderSettingsCard, renderSummaryCard, renderJobCostingSection } from './modules/components.js';
-
-// Global State
-let manualBOQItems = [];
-let manualPOItems = [];
-let activeTab = 'boq-combined';
-
-document.addEventListener('DOMContentLoaded', () => {
-    initApp();
-});
-
-function initApp() {
-    console.log("App Starting...");
-    renderAppUI();
-
-    const provinceSelector = document.getElementById('province_selector');
-    if(provinceSelector) {
-        provinceSelector.add(new Option('กรุงเทพมหานคร', 'กรุงเทพมหานคร'));
-        provinces.forEach(p => provinceSelector.add(new Option(p, p)));
+export const mainCableSpecs = {
+    'MEA': { // กฟน.
+        '5(15)': { 'THW': 10 },
+        '15(45)': { 'THW': 10 },
+        '30(100)': { 'THW': 25 },
+        '50(150)': { 'THW': 35 }
+    },
+    'PEA': { // กฟภ.
+        '5(15)': { 'THW': 10, 'THW-A': 16 },
+        '15(45)': { 'THW': 16, 'THW-A': 25 },
+        '30(100)': { 'THW': 35, 'THW-A': 50 },
+        '50(150)': { 'THW': 35, 'THW-A': 50 }
     }
-    const dateEl = document.getElementById('report_date');
-    if(dateEl) dateEl.valueAsDate = new Date();
+};
 
-    setupCollapsibleCards();
-    setupEventListeners();
-    setupManualJobListeners();
-    setupTabListeners();
-    setupExportButtons();
+export const initialPriceList = {
+    "L-11-01": 5, "L-12-01": 5, "L-13-01": 5, "L-21-01": 25, "L-22-01": 27, "L-23-01": 95,
+    "L-31-01": 100, "L-32-01": 120, "L-33-01": 100, "L-41-01": 150, "L-61-01": 300,
+    "L-71-01": 500, "L-71-02": 25, "L-81-01": 1500, "L-82-01": 1800, "L-83-01": 1200, "L-84-01": 100,
+    "L-91-01": 500, "L-AC-INSTALL-12K": 1500, "L-AC-WIRING": 30, "L-GND-WIRING-4.0": 15,
+    "L-PUMP-INSTALL": 1500, "L-FAN-INSTALL": 500, "L-LAN-POINT": 120, "L-LAN-WIRING": 15,
+    "L-TV-POINT": 120, "L-TV-WIRING": 15, "L-CCTV-POINT": 450, "L-BREAKER-INSTALL": 250,
+    "M-WIRE-THW-2.5-BRN": 15, "M-WIRE-THW-2.5-BLU": 15, "M-WIRE-THW-2.5-GRN": 15,
+    "M-WIRE-THW-1.5-BRN": 10, "M-WIRE-THW-1.5-BLU": 10, "M-WIRE-THW-1.5-GRN": 10,
+    "M-WIRE-VAF-2.5": 25, "M-CLIP-VAF": 1, "M-CONDUIT-PVC-1/2": 58, "M-SADDLE-PVC-1/2": 1,
+    "M-CONN-PVC-COUPLING": 3, "M-CONDUIT-EMT-1/2": 145, "M-STRAP-EMT-1/2": 3,
+    "M-CONN-EMT-COUPLING": 10, "M-CONN-PVC-CONNECTOR": 5, "M-CONN-EMT-CONNECTOR": 8,
+    "M-OUTLET-DPLX-GND": 150, "M-PLATE-2CH": 20, "M-BOX-SURFACE-2X4": 15, "M-BOX-HANDY-2X4": 25,
+    "M-SWITCH-1WAY": 120, "M-PLATE-1CH": 14, "M-LIGHT-DOWNLIGHT-E27": 350, "M-LIGHT-BULB-LED-9W": 65,
+    "M-GROUNDROD-2.4M": 600, "M-GROUNDCLAMP-5/8": 50, "M-WIRE-GND-10SQMM": 60, "M-LUG-10SQMM": 15,
+    "M-GROUND-PIT": 250, "M-WIRE-THW-4.0-BRN": 25, "M-WIRE-THW-4.0-BLU": 25, "M-WIRE-THW-4.0-GRN": 25,
+    "M-CU-4CH": 850, "M-CU-6CH": 1000, "M-CU-8CH": 1200, "M-CU-10CH": 1400, "M-CU-12CH": 1600,
+    "M-CU-LABELS": 50, "M-CB-1P-16A": 120, "M-CB-1P-20A": 120, "M-CB-1P-32A": 120,
+    "M-BOX-BREAKER-SURFACE-1P": 50, "M-AC-BRACKET": 450, "M-AC-PIPE-4M": 750, "M-AC-DUCT-2M": 120,
+    "M-AC-DRAINPIPE-4M": 80, "M-AC-TAPE-VINYL": 50, "M-AC-PUTTY": 30, "M-AC-SCREWS-ANCHORS": 100,
+    "M-PUMP-BALL-VALVE": 80, "M-PUMP-CHECK-VALVE": 150, "M-PUMP-UNION": 60, "M-TAPE-SEAL": 20,
+    "M-FAN-HOOK-ANCHOR": 100, "M-WH-RCBO-32A": 750, "M-WH-HOSE-FLEX": 120, "M-WH-VALVE": 90,
+    "M-SCREWS-ANCHORS-KIT": 50, "M-LAN-RJ45-OUTLET": 250, "M-LAN-CABLE-CAT6": 15,
+    "M-TV-OUTLET": 150, "M-TV-CABLE-RG6": 9, "M-CCTV-CAMERA": 1200, "M-CCTV-CABLE-10M": 250,
+    "M-CCTV-ADAPTER": 150, "M-CCTV-BOX-4X4": 45, "M-TAPE-ELEC": 20, "L-PVC-TRUNKING": 20,
+    "M-PVC-TRUNKING-20x40": 45, "M-LIGHT-SET-LED-PANEL": 250, "M-LIGHT-SET-T8": 300,
+    "L-T8-INSTALL": 200, "L-VCT-WIRING": 9, "L-NYY-WIRING": 15, "M-CABLE-VCT-2C-2.5": 30,
+    "M-CABLE-NYY-2C-2.5": 35, "M-WATERPROOF-BOX": 45, "L-POLE-6.0M": 950, "L-POLE-7.0M": 1025,
+    "L-POLE-8.0M": 1100, "L-POLE-9.0M": 1250, "M-POLE-6.0M": 1050, "M-POLE-7.0M": 1350,
+    "M-POLE-8.0M": 1680, "M-POLE-9.0M": 2090, "L-RACK-INSTALL": 150, "M-RACK-2SET": 300,
+    "M-RACK-4SET": 600, 
     
-    populatePriceEditor();
-    updateRealtimeTotal();
-}
-
-function renderAppUI() {
-    const ids = ['app-project-info', 'app-work-details', 'app-settings', 'app-summary', 'app-manual-job'];
-    const renderers = [renderProjectInfoCard, renderWorkDetails, renderSettingsCard, renderSummaryCard, renderJobCostingSection];
-    ids.forEach((id, index) => { const el = document.getElementById(id); if(el) el.innerHTML = renderers[index](); });
-}
-
-function setupCollapsibleCards() {
-    document.querySelectorAll('.collapsible-card h3').forEach(h => {
-        h.addEventListener('click', () => { h.parentElement.classList.toggle('open'); });
-    });
-}
-
-function setupEventListeners() {
-    document.body.addEventListener('change', (e) => {
-         if(e.target.matches('input, select')) updateRealtimeTotal();
-         handleSpecificChanges(e.target);
-    });
-    document.body.addEventListener('input', (e) => {
-         if(e.target.matches('input[type="number"], input[type="text"]')) updateRealtimeTotal();
-    });
-
-    // Dynamic Listener for Points Input -> Render Extra Distance Fields
-    document.body.addEventListener('input', (e) => {
-        if(e.target.classList.contains('point-count-input')) {
-            const prefix = e.target.dataset.prefix;
-            const index = e.target.dataset.index;
-            const points = parseInt(e.target.value) || 0;
-            renderDynamicInputs(prefix, index, points);
-            updateRealtimeTotal();
-        }
-    });
-
-    const setupDynamicListener = (id, type, containerId) => {
-        const el = document.getElementById(id);
-        if(el) el.addEventListener('input', (e) => {
-            if(type === 'socket' || type === 'light') renderCircuitInputs(type, parseInt(e.target.value)||0, document.getElementById(containerId));
-            else renderDedicatedCircuitInputs(type, parseInt(e.target.value)||0, document.getElementById(containerId));
-        });
-    };
-
-    setupDynamicListener('socket_circuits', 'socket', 'socket_circuits_container');
-    setupDynamicListener('light_circuits', 'light', 'light_circuits_container');
-    setupDynamicListener('ac_wiring_units', 'ac_wiring', 'ac_wiring_circuits_container');
-    setupDynamicListener('heater_wiring_units', 'heater_wiring', 'heater_wiring_circuits_container');
-
-    const calcBtn = document.getElementById('calculate-btn');
-    if(calcBtn) calcBtn.addEventListener('click', () => displayReport());
-}
-
-function handleSpecificChanges(input) {
-    if(input.id === 'province_selector') {
-        const zoneContainer = document.getElementById('bkk_zone_container');
-        if(zoneContainer) {
-             if (input.value === 'กรุงเทพมหานคร') zoneContainer.classList.remove('hidden');
-             else zoneContainer.classList.add('hidden');
-        }
-    }
-    if(input.id === 'toggle_ev_charger_visibility') {
-        const wrapper = document.getElementById('ev_charger_content_wrapper');
-        if(wrapper) {
-            if(input.checked) wrapper.classList.remove('hidden');
-            else {
-                wrapper.classList.add('hidden');
-                document.getElementById('ev_cable_dist_8').value = 0;
-                document.getElementById('ev_charger_cost_8').value = 0;
-            }
-        }
-    }
-}
-
-// --- Calculation Logic ---
-function buildQuantitiesFromDOM() {
-    const quantities = new Map();
-    const addQty = (id, val) => quantities.set(id, (quantities.get(id) || 0) + val);
-    const getVal = (id) => parseFloat(document.getElementById(id)?.value) || 0;
-    const getInt = (id) => parseInt(document.getElementById(id)?.value) || 0;
-
-    // 1. Main External (Manual Cable + Rack)
-    const poleHeight = document.getElementById('pole_height_7')?.value;
-    const poles = getInt('pole_count_7');
-    if (poles > 0 && poleHeight !== '0') {
-        if (poleHeight === '6.0') addQty('17.1', poles);
-        else if (poleHeight === '7.0') addQty('17.1-B', poles);
-        else if (poleHeight === '8.0') addQty('17.2', poles);
-        else if (poleHeight === '9.0') addQty('17.3', poles);
-    }
-    addQty('17.4-2', getInt('rack_2_sets_7'));
-    // Change logic: Rack 4 sets or 1 set
-    // We kept old logic for 4 sets if present, but added 1 set
-    addQty('17.4-1', getInt('rack_1_set_7')); 
-    // If user still wants to use old input logic we handle it, but component has new input
+    // --- ส่วนที่เพิ่มใหม่ (New Items) ---
+    "M-RACK-1SET": 150, 
+    "M-CABLE-THW-10": 45, "M-CABLE-THW-16": 75, "M-CABLE-THW-25": 110, "M-CABLE-THW-35": 150, "M-CABLE-THW-50": 200,
+    "M-CABLE-THW-A-16": 20, "M-CABLE-THW-A-25": 25, "M-CABLE-THW-A-35": 35, "M-CABLE-THW-A-50": 45,
     
-    if (getVal('main_ext_dist_7') > 0) addQty('17.5', getVal('main_ext_dist_7'));
+    // --- รายการเดิมที่ต้องมีอยู่ครบ ---
+    "L-EV-INSTALL-20M": 10000, "M-EV-CHARGER-7KW": 30000, "M-RCD-TYPE-B": 4000,
+    "M-CONDUIT-EMT-3/4": 120, "FEE-TOU-METER": 6500, "L-DEMO-DOWNLIGHT": 25,
+    "L-DEMO-OUTLET-SWITCH": 25, "L-DEMO-PIPE": 200, "L-DEMO-AC": 1500, "L-REPAIR-WALL-POINT": 65
+};
 
-    // 2. Consumer Unit
-    const cuSize = document.getElementById('cu_replacement')?.value;
-    if(cuSize !== 'none') {
-        const cuMap = {'4_slot':'9.1', '6_slot':'9.2', '8_slot':'9.3', '10_slot':'9.4', '12_slot':'9.5'};
-        if(cuMap[cuSize]) addQty(cuMap[cuSize], 1);
-    }
-    if(document.getElementById('install_ground')?.checked) addQty('6.1', 1);
-    addQty('10.1', getInt('mcb_16a')); addQty('10.2', getInt('mcb_20a')); addQty('10.3', getInt('mcb_32a'));
-
-    // 3. Sockets (New Logic: Inter-distance)
-    const socketCount = getInt('socket_circuits');
-    const socketType = document.getElementById('socket_type')?.value;
-    for(let i=1; i<=socketCount; i++) {
-        const panelDist = getVal(`socket_circuit_${i}_panel_dist`);
-        const points = getInt(`socket_circuit_${i}_points`);
-        if(points <= 0) continue;
-
-        // Sum extra distances
-        let extraDist = 0;
-        document.querySelectorAll(`input.extra-dist-input[data-circuit="socket-${i}"]`).forEach(inp => {
-            // Socket uses CM, convert to Meter (/100)
-            extraDist += (parseFloat(inp.value)||0) / 100;
-        });
-        const totalDist = panelDist + extraDist;
-
-        if(socketType === 'surface_vaf') { addQty('1.3', totalDist); addQty('3.1', points); }
-        else if(socketType.includes('_pvc')) {
-            addQty('1.1', totalDist); addQty(socketType.includes('concealed') ? '2.3' : '2.1', totalDist);
-            addQty(socketType.includes('concealed') ? '3.2' : '3.1', points);
-            if(!socketType.includes('trunking')) addQty('13.1', points*2); else addQty('14.1', totalDist);
-        } else if(socketType.includes('_emt')) { addQty('1.1', totalDist); addQty('2.2', totalDist); addQty('3.1', points); addQty('13.2', points*2); }
-    }
-
-    // 4. Lighting (New Logic)
-    const lightCount = getInt('light_circuits');
-    const lightType = document.getElementById('light_type')?.value;
-    const fixture = document.getElementById('fixture_type_1')?.value;
-    for(let i=1; i<=lightCount; i++) {
-        const p2s = getVal(`light_circuit_${i}_dist_panel_to_switch`);
-        const s2l = getVal(`light_circuit_${i}_dist_switch_to_light`);
-        const points = getInt(`light_circuit_${i}_points`);
-        if(points <= 0) continue;
-
-        let extraDist = 0;
-        document.querySelectorAll(`input.extra-dist-input[data-circuit="light-${i}"]`).forEach(inp => {
-            // Light uses Meter, no conversion
-            extraDist += (parseFloat(inp.value)||0);
-        });
-        const totalDist = p2s + s2l + extraDist;
-
-        addQty('1.2', totalDist);
-        if(lightType.includes('_pvc')) addQty(lightType.includes('concealed') ? '2.3' : '2.1', totalDist);
-        else if(lightType.includes('_emt')) addQty('2.2', totalDist); else if(lightType.includes('trunking')) addQty('14.1', totalDist);
+export const electricalInstallationData = [
+    { "category_id": "1.0", "category_name": "งานเดินสายไฟฟ้า", "tasks": [
+        { "task_id": "1.1", "task_name": "ร้อยสาย THW 2.5mm² ในท่อ (เต้ารับ)", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-11-01"}], "material_components": [{"material_id": "M-WIRE-THW-2.5-BRN", "spec": "สาย THW 2.5mm² สีน้ำตาล"}, {"material_id": "M-WIRE-THW-2.5-BLU", "spec": "สาย THW 2.5mm² สีฟ้า"}, {"material_id": "M-WIRE-THW-2.5-GRN", "spec": "สาย THW 2.5mm² สีเขียว/เหลือง"}] },
+        { "task_id": "1.2", "task_name": "ร้อยสาย THW 1.5mm² ในท่อ (แสงสว่าง)", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-12-01"}], "material_components": [{"material_id": "M-WIRE-THW-1.5-BRN", "spec": "สาย THW 1.5mm² สีน้ำตาล"}, {"material_id": "M-WIRE-THW-1.5-BLU", "spec": "สาย THW 1.5mm² สีฟ้า"}, ] },
+        { "task_id": "1.3", "task_name": "เดินสาย VAF 2x2.5mm² ตีกิ๊ป", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-13-01"}], "material_components": [{"material_id": "M-WIRE-VAF-2.5", "spec": "สาย VAF-G 2x2.5mm²"}, {"material_id": "M-CLIP-VAF", "spec": "กิ๊ปจับสาย", "usage_logic": "5 per meter"}] },
+        { "task_id": "1.4", "task_name": "ร้อยสาย THW 4.0mm² ในท่อ (L,N)", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-AC-WIRING"}], "material_components": [{"material_id": "M-WIRE-THW-4.0-BRN", "spec":"สาย THW 4.0mm² สีน้ำตาล"}, {"material_id": "M-WIRE-THW-4.0-BLU", "spec":"สาย THW 4.0mm² สีฟ้า"}] },
+        { "task_id": "1.5", "task_name": "ร้อยสายดิน THW 4.0mm² ในท่อ (G)", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-GND-WIRING-4.0"}], "material_components": [{"material_id": "M-WIRE-THW-4.0-GRN", "spec":"สาย THW 4.0mm² สีเขียว/เหลือง"}] }
+    ]},
+    { "category_id": "2.0", "category_name": "งานติดตั้งท่อร้อยสาย", "tasks": [
+        { "task_id": "2.1", "task_name": "เดินท่อ PVC ลอย", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-21-01"}], "material_components": [{"material_id": "M-CONDUIT-PVC-1/2", "spec": "ท่อ PVC 1/2\"", "usage_logic": "ceil(m/2.92) pipes"}, {"material_id": "M-SADDLE-PVC-1/2", "spec": "กิ๊ปจับท่อ PVC 1/2\"", "usage_logic": "1 per meter"}, {"material_id": "M-CONN-PVC-COUPLING", "spec": "ข้อต่อตรง PVC", "usage_logic": "ceil(m/2.92)-1 couplings"}] },
+        { "task_id": "2.2", "task_name": "เดินท่อ EMT ลอย", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-22-01"}], "material_components": [{"material_id": "M-CONDUIT-EMT-1/2", "spec": "ท่อ EMT 1/2\"", "usage_logic": "ceil(m/3.05) pipes"}, {"material_id": "M-STRAP-EMT-1/2", "spec": "แคล้มป์จับท่อ EMT 1/2\"", "usage_logic": "1 per 1.5 meter"}, {"material_id": "M-CONN-EMT-COUPLING", "spec": "ข้อต่อตรง EMT", "usage_logic": "ceil(m/3.05)-1 couplings"}] },
+        { "task_id": "2.3", "task_name": "เดินท่อ PVC ฝังผนัง (รวมกรีด/สกัด/ฉาบปูนหยาบ)", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-23-01"}], "material_components": [{"material_id": "M-CONDUIT-PVC-1/2", "spec": "ท่อ PVC 1/2\"", "usage_logic": "ceil(m/2.92) pipes"}, {"material_id": "M-CONN-PVC-COUPLING", "spec": "ข้อต่อตรง PVC", "usage_logic": "ceil(m/2.92)-1 couplings"}]}
+    ]},
+    { "category_id": "3.0", "category_name": "งานติดตั้งสวิตช์-เต้ารับ", "tasks": [
+        { "task_id": "3.1", "task_name": "ติดตั้งเต้ารับแบบลอย", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-31-01"}], "material_components": [{"material_id": "M-OUTLET-DPLX-GND", "spec": "เต้ารับกราวด์คู่"}, {"material_id": "M-PLATE-2CH", "spec": "หน้ากาก 2 ช่อง"}, {"material_id": "M-BOX-SURFACE-2X4", "spec": "กล่องลอย 2x4\""}, {"material_id": "M-TAPE-ELEC", "spec": "เทปพันสายไฟ"}] },
+        { "task_id": "3.2", "task_name": "ติดตั้งเต้ารับแบบฝัง", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-32-01"}], "material_components": [{"material_id": "M-OUTLET-DPLX-GND", "spec": "เต้ารับกราวด์คู่"}, {"material_id": "M-PLATE-2CH", "spec": "หน้ากาก 2 ช่อง"}, {"material_id": "M-BOX-HANDY-2X4", "spec": "กล่องฝัง 2x4\""}, {"material_id": "M-TAPE-ELEC", "spec": "เทปพันสายไฟ"}] },
+        { "task_id": "3.3", "task_name": "ติดตั้งสวิตช์แบบลอย", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-33-01"}], "material_components": [{"material_id": "M-SWITCH-1WAY", "spec": "สวิตช์ทางเดียว"}, {"material_id": "M-PLATE-1CH", "spec": "หน้ากาก 1 ช่อง"}, {"material_id": "M-BOX-SURFACE-2X4", "spec": "กล่องลอย 2x4\""}, {"material_id": "M-TAPE-ELEC", "spec": "เทปพันสายไฟ"}] }
+    ]},
+    { "category_id": "4.0", "category_name": "งานติดตั้งอุปกรณ์แสงสว่าง", "tasks": [
+        { "task_id": "4.1", "task_name": "ติดตั้งโคมไฟดาวน์ไลท์ (LED E27)", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-41-01"}], "material_components": [{"material_id": "M-LIGHT-DOWNLIGHT-E27", "spec": "โคมดาวน์ไลท์ E27"}, {"material_id": "M-LIGHT-BULB-LED-9W", "spec": "หลอด LED 9W"}, {"material_id": "M-TAPE-ELEC", "spec": "เทปพันสายไฟ"}] }
+    ]},
+    { "category_id": "5.0", "category_name": "งานติดตั้งเครื่องใช้ไฟฟ้า", "tasks": [
+        { "task_id": "5.1", "task_name": "ติดตั้งเครื่องปรับอากาศ (9-12k BTU)", "unit_of_measure": "เครื่อง", "labor_components": [{"labor_id": "L-AC-INSTALL-12K"}], "material_components": [{"material_id": "M-AC-BRACKET", "spec": "ขาแขวนคอยล์ร้อน"}, {"material_id": "M-AC-PIPE-4M", "spec": "ท่อน้ำยาสำเร็จ 4 เมตร"}, {"material_id": "M-AC-DUCT-2M", "spec": "รางครอบท่อแอร์ 2 เมตร", "usage_logic": "2 per unit"}, {"material_id": "M-AC-DRAINPIPE-4M", "spec": "ท่อน้ำทิ้ง PVC สีเทา 4 เมตร"}, {"material_id": "M-AC-TAPE-VINYL", "spec": "เทปพันท่อแอร์"}, {"material_id": "M-AC-PUTTY", "spec": "ดินน้ำมันสำหรับอุดรูท่อ"}, {"material_id": "M-AC-SCREWS-ANCHORS", "spec": "ชุดพุกและสกรูยึด"}] },
+        { "task_id": "5.2", "task_name": "เดินสายไฟสำหรับเครื่องปรับอากาศ (V6: ซ่อน)", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-AC-WIRING"}], "material_components": [{"material_id": "M-WIRE-THW-4.0-BRN"}, {"material_id": "M-WIRE-THW-4.0-BLU"}, {"material_id": "M-WIRE-THW-2.5-GRN"}] },
+        { "task_id": "5.3", "task_name": "ติดตั้งปั๊มน้ำอัตโนมัติ", "unit_of_measure": "เครื่อง", "labor_components": [{"labor_id": "L-PUMP-INSTALL"}], "material_components": [{"material_id": "M-PUMP-BALL-VALVE", "spec": "บอลวาล์ว PVC", "usage_logic": "2 per unit"}, {"material_id": "M-PUMP-CHECK-VALVE", "spec": "เช็ควาล์วสปริง"}, {"material_id": "M-PUMP-UNION", "spec": "ข้อต่อยูเนี่ยน PVC", "usage_logic": "2 per unit"}, {"material_id": "M-TAPE-SEAL", "spec": "เทปพันเกลียว"}] },
+        { "task_id": "5.4", "task_name": "ติดตั้งพัดลมเพดาน/ดูดอากาศ", "unit_of_measure": "เครื่อง", "labor_components": [{"labor_id": "L-FAN-INSTALL"}], "material_components": [{"material_id": "M-FAN-HOOK-ANCHOR", "spec": "พุก/ตะขอสำหรับยึด"}, {"material_id": "M-TAPE-ELEC", "spec": "เทปพันสายไฟ"}] }
+    ]},
+    { "category_id": "6.0", "category_name": "งานติดตั้งระบบสายดิน", "tasks": [
+        { "task_id": "6.1", "task_name": "ตอกหลักดินและติดตั้งสายดิน", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-61-01"}], "material_components": [{"material_id": "M-GROUNDROD-2.4M", "spec": "แท่งกราวด์ 2.4ม."}, {"material_id": "M-GROUNDCLAMP-5/8", "spec": "แคล้มป์หัวใจ 5/8\""}, {"material_id": "M-LUG-10SQMM", "spec": "หางปลา 10mm²"}, {"material_id": "M-GROUND-PIT", "spec": "บ่อพักสายดิน (Ground Pit)"}] }
+    ]},
+    { "category_id": "7.0", "category_name": "งานติดตั้งอุปกรณ์พิเศษ", "tasks": [
+        { "task_id": "7.1", "task_name": "ติดตั้งเครื่องทำน้ำอุ่น (ไม่รวมสาย)", "unit_of_measure": "เครื่อง", "labor_components": [{"labor_id": "L-71-01"}], "material_components": [{"material_id": "M-WH-RCBO-32A", "spec": "เบรกเกอร์กันดูด RCBO 32A"}, {"material_id": "M-WH-HOSE-FLEX", "spec": "สายน้ำดีถัก", "usage_logic": "2 per unit"}, {"material_id": "M-WH-VALVE", "spec": "วาล์วน้ำ"}, {"material_id": "M-TAPE-SEAL", "spec": "เทปพันเกลียว"}, {"material_id": "M-SCREWS-ANCHORS-KIT", "spec": "ชุดพุกและสกรู"}] },
+        { "task_id": "7.2", "task_name": "เดินสายไฟสำหรับเครื่องทำน้ำอุ่น (V6: ซ่อน)", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-71-02"}], "material_components": [{"material_id": "M-WIRE-THW-4.0-BRN", "spec": "สาย THW 4.0mm² สีน้ำตาล"}, {"material_id": "M-WIRE-THW-4.0-BLU", "spec": "สาย THW 4.0mm² สีฟ้า"}, {"material_id": "M-WIRE-THW-2.5-GRN", "spec": "สาย THW 2.5mm² สีเขียว/เหลือง"}] }
+    ]},
+    { "category_id": "8.0", "category_name": "งานบริการและตรวจซ่อม", "tasks": [
+        { "task_id": "8.1", "task_name": "ตรวจเช็คระบบไฟฟ้าประจำปี", "unit_of_measure": "ครั้ง", "labor_components": [{"labor_id": "L-81-01"}], "material_components": [] },
+        { "task_id": "8.2", "task_name": "ค้นหาจุดไฟฟ้ารั่ว", "unit_of_measure": "ครั้ง", "labor_components": [{"labor_id": "L-82-01"}], "material_components": [] },
+        { "task_id": "8.3", "task_name": "ตรวจสอบสาเหตุเบรกเกอร์ทริป", "unit_of_measure": "ครั้ง", "labor_components": [{"labor_id": "L-83-01"}], "material_components": [] },
+        { "task_id": "8.4", "task_name": "เปลี่ยนหลอดไฟ", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-84-01"}], "material_components": [] }
+    ]},
+    { "category_id": "9.0", "category_name": "งานเปลี่ยนตู้ควบคุมไฟฟ้า", "tasks": [
+        { "task_id": "9.1", "task_name": "เปลี่ยนตู้ CU 4 ช่อง", "unit_of_measure": "ตู้", "labor_components": [{"labor_id": "L-91-01"}], "material_components": [{"material_id": "M-CU-4CH", "spec": "ตู้ CU 4 ช่อง"}, {"material_id": "M-CU-LABELS", "spec": "สติ๊กเกอร์ระบุวงจร"}] },
+        { "task_id": "9.2", "task_name": "เปลี่ยนตู้ CU 6 ช่อง", "unit_of_measure": "ตู้", "labor_components": [{"labor_id": "L-91-01"}], "material_components": [{"material_id": "M-CU-6CH", "spec": "ตู้ CU 6 ช่อง"}, {"material_id": "M-CU-LABELS", "spec": "สติ๊กเกอร์ระบุวงจร"}] },
+        { "task_id": "9.3", "task_name": "เปลี่ยนตู้ CU 8 ช่อง", "unit_of_measure": "ตู้", "labor_components": [{"labor_id": "L-91-01"}], "material_components": [{"material_id": "M-CU-8CH", "spec": "ตู้ CU 8 ช่อง"}, {"material_id": "M-CU-LABELS", "spec": "สติ๊กเกอร์ระบุวงจร"}] },
+        { "task_id": "9.4", "task_name": "เปลี่ยนตู้ CU 10 ช่อง", "unit_of_measure": "ตู้", "labor_components": [{"labor_id": "L-91-01"}], "material_components": [{"material_id": "M-CU-10CH", "spec": "ตู้ CU 10 ช่อง"}, {"material_id": "M-CU-LABELS", "spec": "สติ๊กเกอร์ระบุวงจร"}] },
+        { "task_id": "9.5", "task_name": "เปลี่ยนตู้ CU 12 ช่อง", "unit_of_measure": "ตู้", "labor_components": [{"labor_id": "L-91-01"}], "material_components": [{"material_id": "M-CU-12CH", "spec": "ตู้ CU 12 ช่อง"}, {"material_id": "M-CU-LABELS", "spec": "สติ๊กเกอร์ระบุวงจร"}] }
+    ]},
+    { "category_id": "10.0", "category_name": "วัสดุเพิ่มเติม", "tasks": [
+        { "task_id": "10.1", "task_name": "เบรกเกอร์ลูกย่อย 16A", "unit_of_measure": "ตัว", "labor_components": [], "material_components": [{"material_id": "M-CB-1P-16A", "spec": "MCB 1P 16A"}] },
+        { "task_id": "10.2", "task_name": "เบรกเกอร์ลูกย่อย 20A", "unit_of_measure": "ตัว", "labor_components": [], "material_components": [{"material_id": "M-CB-1P-20A", "spec": "MCB 1P 20A"}] },
+        { "task_id": "10.3", "task_name": "เบรกเกอร์ลูกย่อย 32A", "unit_of_measure": "ตัว", "labor_components": [], "material_components": [{"material_id": "M-CB-1P-32A", "spec": "MCB 1P 32A"}] }
+    ]},
+    { "category_id": "11.0", "category_name": "งานระบบแรงดันต่ำและสื่อสาร", "tasks": [
+        { "task_id": "11.1", "task_name": "ติดตั้งจุด LAN (Cat6)", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-LAN-POINT"}], "material_components": [{"material_id": "M-LAN-RJ45-OUTLET", "spec": "เต้ารับ LAN RJ45 Cat6"}, {"material_id": "M-PLATE-1CH", "spec": "หน้ากาก 1 ช่อง"}, {"material_id": "M-BOX-SURFACE-2X4", "spec": "กล่องลอย 2x4\""}] },
+        { "task_id": "11.2", "task_name": "เดินสาย LAN (Cat6)", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-LAN-WIRING"}], "material_components": [{"material_id": "M-LAN-CABLE-CAT6", "spec": "สาย UTP Cat6"}] },
+        { "task_id": "11.3", "task_name": "ติดตั้งจุด TV (RG6)", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-TV-POINT"}], "material_components": [{"material_id": "M-TV-OUTLET", "spec": "เต้ารับ TV RG6"}, {"material_id": "M-PLATE-1CH", "spec": "หน้ากาก 1 ช่อง"}, {"material_id": "M-BOX-SURFACE-2X4", "spec": "กล่องลอย 2x4\""}] },
+        { "task_id": "11.4", "task_name": "เดินสาย TV (RG6)", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-TV-WIRING"}], "material_components": [{"material_id": "M-TV-CABLE-RG6", "spec": "สาย Coaxial RG6"}] },
+        { "task_id": "11.5", "task_name": "ติดตั้งกล้องวงจรปิด (CCTV)", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-CCTV-POINT"}], "material_components": [{"material_id": "M-CCTV-CAMERA", "spec": "กล้อง CCTV มาตรฐาน"}, {"material_id": "M-CCTV-CABLE-10M", "spec": "สายสัญญาณสำเร็จ 10 เมตร"}, {"material_id": "M-CCTV-ADAPTER", "spec": "Adapterแปลงไฟสำหรับกล้อง"}, {"material_id": "M-CCTV-BOX-4X4", "spec": "บ็อกซ์กันน้ำ 4x4\""}] }
+    ]},
+    { "category_id": "12.0", "category_name": "งานติดตั้งเบรกเกอร์ย่อย", "tasks": [
+        { "task_id": "12.1", "task_name": "ติดตั้งเบรกเกอร์ย่อยพร้อมกล่องลอย", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-BREAKER-INSTALL"}], "material_components": [{"material_id": "M-BOX-BREAKER-SURFACE-1P", "spec":"กล่องเบรกเกอร์ลอย 1 ช่อง"}] }
+    ]},
+     { "category_id": "13.0", "category_name": "อุปกรณ์ประกอบท่อ", "tasks": [
+        { "task_id": "13.1", "task_name": "คอนเนคเตอร์ PVC 1/2\"", "unit_of_measure": "ตัว", "labor_components": [], "material_components": [{"material_id": "M-CONN-PVC-CONNECTOR", "spec":"คอนเนคเตอร์ท่อ PVC 1/2\""}] },
+        { "task_id": "13.2", "task_name": "คอนเนคเตอร์ EMT 1/2\"", "unit_of_measure": "ตัว", "labor_components": [], "material_components": [{"material_id": "M-CONN-EMT-CONNECTOR", "spec":"คอนเนคเตอร์ท่อ EMT 1/2\""}] }
+    ]},
+    { "category_id": "14.0", "category_name": "งานราง PVC", "tasks": [
+        { "task_id": "14.1", "task_name": "เดินราง PVC สีขาว", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-PVC-TRUNKING"}], "material_components": [{"material_id": "M-PVC-TRUNKING-20x40", "spec": "ราง PVC 20x40mm (รวมข้องอ/ข้อต่อเฉลี่ย)"}] }
+    ]},
+    { "category_id": "15.0", "category_name": "งานแสงสว่างใหม่", "tasks": [
+        { "task_id": "15.1", "task_name": "ติดตั้งโคมไฟ LED Panel สำเร็จรูป", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-41-01"}], "material_components": [{"material_id": "M-LIGHT-SET-LED-PANEL", "spec": "โคมไฟ LED Panel 9W สำเร็จรูป"}] },
+        { "task_id": "15.2", "task_name": "ติดตั้งชุดโคมไฟฟลูออเรสเซนต์ T8", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-T8-INSTALL"}], "material_components": [{"material_id": "M-LIGHT-SET-T8", "spec": "ชุดโคม T8 (ราง, หลอด, บัลลาสต์, สตาร์ทเตอร์)"}] }
+    ]},
+    { "category_id": "16.0", "category_name": "งานสายเฉพาะทาง", "tasks": [
+        { "task_id": "16.1", "task_name": "เดินสาย VCT 2C 2.5mm² (L,N,G)", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-VCT-WIRING"}], "material_components": [{"material_id": "M-CABLE-VCT-2C-2.5"}, {"material_id": "M-WIRE-THW-2.5-GRN"}] },
+        { "task_id": "16.2", "task_name": "เดินสาย NYY 2C 2.5mm² (L,N,G)", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-NYY-WIRING"}], "material_components": [{"material_id": "M-CABLE-NYY-2C-2.5"}, {"material_id": "M-WIRE-THW-2.5-GRN"}, {"material_id": "M-WATERPROOF-BOX", "spec": "กล่องต่อสายกันน้ำ", "usage_logic": "0.1 per meter"}] }
+    ]},
+    { "category_id": "17.0", "category_name": "งานเมนภายนอก", "tasks": [
+        { "task_id": "17.1", "task_name": "ปักเสาไฟฟ้า 6.0ม.", "unit_of_measure": "ต้น", "labor_components": [{"labor_id": "L-POLE-6.0M"}], "material_components": [{"material_id": "M-POLE-6.0M"}] },
+        { "task_id": "17.1-B", "task_name": "ปักเสาไฟฟ้า 7.0ม.", "unit_of_measure": "ต้น", "labor_components": [{"labor_id": "L-POLE-7.0M"}], "material_components": [{"material_id": "M-POLE-7.0M"}] },
+        { "task_id": "17.2", "task_name": "ปักเสาไฟฟ้า 8.0ม.", "unit_of_measure": "ต้น", "labor_components": [{"labor_id": "L-POLE-8.0M"}], "material_components": [{"material_id": "M-POLE-8.0M"}] },
+        { "task_id": "17.3", "task_name": "ปักเสาไฟฟ้า 9.0ม.", "unit_of_measure": "ต้น", "labor_components": [{"labor_id": "L-POLE-9.0M"}], "material_components": [{"material_id": "M-POLE-9.0M"}] },
+        { "task_id": "17.4-2", "task_name": "ติดตั้งแร็ค 2 ชุด", "unit_of_measure": "ชุด", "labor_components": [{"labor_id": "L-RACK-INSTALL"}], "material_components": [{"material_id": "M-RACK-2SET"}] },
+        { "task_id": "17.4-4", "task_name": "ติดตั้งแร็ค 4 ชุด", "unit_of_measure": "ชุด", "labor_components": [{"labor_id": "L-RACK-INSTALL"}], "material_components": [{"material_id": "M-RACK-4SET"}] },
         
-        if(fixture === 'LED_E27') addQty('4.1', points); else if(fixture === 'LED_PANEL') addQty('15.1', points); else if(fixture === 'T8_SET') addQty('15.2', points);
-    }
+        // เพิ่ม Task แร็ค 1 ชุด
+        { "task_id": "17.4-1", "task_name": "ติดตั้งแร็ค 1 ชุด", "unit_of_measure": "ชุด", "labor_components": [{"labor_id": "L-RACK-INSTALL"}], "material_components": [{"material_id": "M-RACK-1SET"}] },
 
-    // 5. AC/Heater
-    ['ac_wiring', 'heater_wiring'].forEach(prefix => {
-        const count = getInt(`${prefix}_units`);
-        const installType = document.getElementById(prefix==='ac_wiring'?'ac_install_type_4':'wh_install_type_5')?.value;
-        for(let i=1; i<=count; i++) {
-            // Note: Dedicated circuit inputs usually don't have dynamic extra points logic requested, 
-            // keeping simple distance logic as per V2 but ensuring it works.
-            // V2 `ui_renderer` for dedicated circuits uses `_dist` suffix.
-            const dist = getVal(`${prefix}_${i}_dist`); 
-            if(dist <= 0) continue;
-            
-            // Dedicated usually implies 1 point (the unit itself). Logic simplified for brevity.
-            addQty('1.4', dist); // Wire L,N
-            addQty('1.5', dist); // Ground
-            // Breaker/Box logic omitted for brevity but can be added if needed.
-            
-            if(installType.includes('_pvc')) addQty(installType.includes('concealed') ? '2.3' : '2.1', dist); 
-            else if(installType.includes('_emt')) addQty('2.2', dist);
-        }
-    });
-
-    // 6-10. Others (Same as before)
-    addQty('11.1', getInt('lan_points')); addQty('11.2', getVal('lan_distance'));
-    addQty('11.3', getInt('tv_points')); addQty('11.4', getVal('tv_distance'));
-    addQty('11.5', getInt('cctv_points'));
-    addQty('7.1', getInt('heater_units')); addQty('5.1', getInt('ac_units'));
-    addQty('5.3', getInt('pump_units')); const pumpType = document.getElementById('wp_install_type_6')?.value;
-    if(pumpType === 'vct_clip') addQty('16.1', 15 * getInt('pump_units')); else if(pumpType === 'nyy_burial') { addQty('16.2', 15 * getInt('pump_units')); addQty('2.1', 15 * getInt('pump_units')); }
-    addQty('5.4', getInt('fan_units'));
-    if(document.getElementById('service_inspection')?.checked) addQty('8.1', 1);
-    if(document.getElementById('service_leak_find')?.checked) addQty('8.2', 1);
-    if(document.getElementById('service_trip_find')?.checked) addQty('8.3', 1);
-    addQty('8.4', getInt('service_lamp_replace'));
-    if(document.getElementById('toggle_ev_charger_visibility')?.checked && getVal('ev_cable_dist_8') > 0) {
-        addQty('18.1', 1); if(document.getElementById('ev_install_type_8').value === 'new_meter_tou') addQty('18.2', 1);
-        const evCost = getVal('ev_charger_cost_8'); if(evCost > 0) setPrice('M-EV-CHARGER-7KW', evCost);
-    }
-    addQty('19.1', getInt('demo_lights_9')); addQty('19.2', getInt('demo_outlets_9'));
-    addQty('19.3', getInt('demo_cables_9')); addQty('19.4', getInt('demo_ac_9'));
-    if(document.getElementById('demo_include_repair_9')?.checked) addQty('19.5', getInt('demo_lights_9') + getInt('demo_outlets_9'));
-
-    return quantities;
-}
-
-function performCalculation() {
-    const quantities = buildQuantitiesFromDOM();
-    
-    const settings = {
-        qualityMultiplier: parseFloat(document.getElementById('material_quality').value) || 1.0,
-        wastageFactor: (parseFloat(document.getElementById('wastage_factor').value) || 0) / 100,
-        overheadFactor: (parseFloat(document.getElementById('overhead_factor').value) || 0) / 100,
-        profitFactor: (parseFloat(document.getElementById('profit_factor').value) || 0) / 100,
-        province: document.getElementById('province_selector').value,
-        bkkZone: document.getElementById('bkk_zone_selector').value,
-        includeVat: document.getElementById('include_vat').checked,
-        minCharge: parseFloat(document.getElementById('min_charge').value) || 0,
-        
-        // Config for manual cable selection
-        cableSpecConfig: {
-            authority: document.getElementById('main_authority_7').value,
-            meterSize: document.getElementById('meter_size_3').value,
-            mainType: document.getElementById('main_ext_type_7').value,
-            // Pass manual size selection
-            manualSize: document.getElementById('main_cable_size_7').value
-        }
-    };
-
-    return calculateProjectCost(quantities, settings, manualPOItems, manualBOQItems);
-}
-
-function updateRealtimeTotal() {
-    const costs = performCalculation();
-    document.getElementById('total-display').textContent = `฿${formatCurrency(costs.totalWithVat)}`;
-}
-
-// Export Functions (PDF/Image) - Same as before
-function setupExportButtons() {
-    const savePdfBtn = document.getElementById('save-pdf-btn');
-    const saveImageBtn = document.getElementById('save-image-btn');
-
-    if (savePdfBtn) {
-        savePdfBtn.addEventListener('click', async () => {
-            const btnOriginalText = savePdfBtn.innerText;
-            savePdfBtn.innerText = "กำลังสร้าง...";
-            savePdfBtn.disabled = true;
-            try {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('p', 'mm', 'a4');
-                const element = document.getElementById('output-section'); 
-                const buttons = element.querySelectorAll('button, .no-print');
-                buttons.forEach(b => b.style.display = 'none');
-                await doc.html(element, {
-                    callback: function(doc) {
-                        doc.save('ใบเสนอราคา.pdf');
-                        buttons.forEach(b => b.style.display = '');
-                        savePdfBtn.innerText = btnOriginalText;
-                        savePdfBtn.disabled = false;
-                    },
-                    x: 10, y: 10, width: 190, windowWidth: element.scrollWidth
-                });
-            } catch (error) {
-                console.error(error);
-                savePdfBtn.innerText = btnOriginalText;
-                savePdfBtn.disabled = false;
-            }
-        });
-    }
-    if (saveImageBtn) {
-        saveImageBtn.addEventListener('click', () => {
-            const element = document.getElementById('output-section');
-            const buttons = element.querySelectorAll('button, .no-print');
-            buttons.forEach(b => b.style.display = 'none');
-            html2canvas(element).then(canvas => {
-                const link = document.createElement('a');
-                link.download = 'ใบเสนอราคา.png';
-                link.href = canvas.toDataURL();
-                link.click();
-                buttons.forEach(b => b.style.display = '');
-            });
-        });
-    }
-}
-
-function displayReport() {
-    const costs = performCalculation();
-    const output = document.getElementById('output-section');
-    output.classList.remove('hidden');
-    output.scrollIntoView({behavior:'smooth'});
-    document.getElementById('report-content').innerHTML = generateReport(costs, activeTab).html;
-}
-
-function setupManualJobListeners() { /* ... Same logic as prev ... */ }
-function populatePriceEditor() { /* ... Same logic as prev ... */ }
-function setupTabListeners() { /* ... Same logic as prev ... */ }
+        { "task_id": "17.5", "task_name": "เดินสายเมน THW/THW-A", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-11-01"}], "material_components": [
+            {"material_id": "M-CABLE-THW-10"}, {"material_id": "M-CABLE-THW-16"}, {"material_id": "M-CABLE-THW-25"}, {"material_id": "M-CABLE-THW-35"}, {"material_id": "M-CABLE-THW-50"},
+            {"material_id": "M-CABLE-THW-A-16"}, {"material_id": "M-CABLE-THW-A-25"}, {"material_id": "M-CABLE-THW-A-35"}, {"material_id": "M-CABLE-THW-A-50"}
+        ]}
+    ]},
+    { "category_id": "18.0", "category_name": "งาน EV Charger", "tasks": [
+        { "task_id": "18.1", "task_name": "ติดตั้ง EV Charger (รวมอุปกรณ์)", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-EV-INSTALL-20M"}], "material_components": [{"material_id": "M-EV-CHARGER-7KW"}, {"material_id": "M-RCD-TYPE-B"}, {"material_id": "M-CABLE-THW-16"}, {"material_id": "M-CONDUIT-EMT-3/4"}] },
+        { "task_id": "18.2", "task_name": "ค่าธรรมเนียมมิเตอร์ TOU", "unit_of_measure": "จุด", "labor_components": [], "material_components": [{"material_id": "FEE-TOU-METER"}] }
+    ]},
+    { "category_id": "19.0", "category_name": "งานรื้อถอน", "tasks": [
+        { "task_id": "19.1", "task_name": "รื้อถอนดวงโคม", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-DEMO-DOWNLIGHT"}], "material_components": [] },
+        { "task_id": "19.2", "task_name": "รื้อถอนเต้ารับ/สวิตช์", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-DEMO-OUTLET-SWITCH"}], "material_components": [] },
+        { "task_id": "19.3", "task_name": "รื้อถอนสาย/ท่อ", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-DEMO-PIPE"}], "material_components": [] },
+        { "task_id": "19.4", "task_name": "รื้อถอนเครื่องปรับอากาศ", "unit_of_measure": "เครื่อง", "labor_components": [{"labor_id": "L-DEMO-AC"}], "material_components": [] },
+        { "task_id": "19.5", "task_name": "ค่าแรงซ่อมผนัง", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-REPAIR-WALL-POINT"}], "material_components": [] }
+    ]}
+];

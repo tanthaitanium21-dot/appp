@@ -1,3 +1,6 @@
+// main.js
+// เวอร์ชันสมบูรณ์ (Fixed: renderAppUI Missing)
+
 import { provinces } from './data/provinces.js';
 import { calculateProjectCost, getPriceList, setPrice, getAllItems } from './modules/calculator.js';
 import { renderCircuitInputs, renderDedicatedCircuitInputs, renderDynamicInputs, formatCurrency } from './modules/ui_renderer.js';
@@ -9,34 +12,33 @@ let manualBOQItems = [];
 let manualPOItems = [];
 let activeTab = 'boq-combined';
 
+// --- 1. เริ่มต้นทำงาน (Init) ---
 document.addEventListener('DOMContentLoaded', initApp);
 
 function initApp() {
     console.log("App Starting...");
     
-    // 1. สร้างหน้าจอ (Render UI)
+    // สร้างหน้าจอ (Render UI)
     renderAppUI();
 
-    // 2. ตั้งค่าข้อมูลพื้นฐาน (จังหวัด/วันที่)
+    // ตั้งค่าข้อมูลพื้นฐาน
     setupStaticData();
 
-    // 3. ผูก Event Listeners
+    // เริ่มการทำงานของระบบ
     setupEventListeners();
-    
-    // 4. ตั้งค่าอื่นๆ
     setupCollapsibleCards();
     setupManualJobListeners();
     setupTabListeners();
     setupExportButtons();
     
-    // 5. โหลดราคาและคำนวณครั้งแรก
+    // คำนวณค่าเริ่มต้น
     populatePriceEditor();
     updateRealtimeTotal();
     
     console.log("App Initialized Successfully!");
 }
 
-// ฟังก์ชันสร้างหน้าจอ (ที่เคยหายไป)
+// --- 2. ฟังก์ชันสร้างหน้าจอ (ต้องมีตัวนี้ Error ถึงจะหาย) ---
 function renderAppUI() {
     const ids = ['app-project-info', 'app-work-details', 'app-settings', 'app-summary', 'app-manual-job'];
     const renderers = [renderProjectInfoCard, renderWorkDetails, renderSettingsCard, renderSummaryCard, renderJobCostingSection];
@@ -47,6 +49,7 @@ function renderAppUI() {
     });
 }
 
+// --- 3. ฟังก์ชันจัดการข้อมูลพื้นฐาน ---
 function setupStaticData() {
     const provinceSelector = document.getElementById('province_selector');
     if (provinceSelector) {
@@ -57,8 +60,9 @@ function setupStaticData() {
     if (dateEl) dateEl.valueAsDate = new Date();
 }
 
+// --- 4. ฟังก์ชันจัดการ Event (การคลิก/พิมพ์) ---
 function setupEventListeners() {
-    // Global Listener สำหรับ Input/Change
+    // ดักจับการเปลี่ยนแปลงข้อมูลทั้งหมด
     document.body.addEventListener('change', (e) => {
         if (e.target.matches('input, select')) updateRealtimeTotal();
         handleSpecificChanges(e.target);
@@ -66,7 +70,7 @@ function setupEventListeners() {
     document.body.addEventListener('input', (e) => {
         if (e.target.matches('input[type="number"], input[type="text"]')) updateRealtimeTotal();
         
-        // Logic: เมื่อกรอกจำนวนจุด -> สร้างช่องกรอกระยะห่าง
+        // กรณีมีการกรอกจำนวนจุด -> ให้สร้างช่องกรอกระยะห่าง
         if (e.target.classList.contains('point-count-input')) {
             const prefix = e.target.dataset.prefix;
             const index = e.target.dataset.index;
@@ -76,7 +80,7 @@ function setupEventListeners() {
         }
     });
     
-    // Listener สำหรับสร้างวงจร (Dynamic Inputs)
+    // ตั้งค่า Listener เริ่มต้นสำหรับวงจรไฟฟ้า
     setupDynamicListener('socket_circuits', 'socket', 'socket_circuits_container');
     setupDynamicListener('light_circuits', 'light', 'light_circuits_container');
     setupDynamicListener('ac_wiring_units', 'ac_wiring', 'ac_wiring_circuits_container');
@@ -99,7 +103,6 @@ function setupDynamicListener(id, type, containerId) {
 }
 
 function handleSpecificChanges(input) {
-    // ซ่อน/แสดง โซนกทม.
     if (input.id === 'province_selector') {
         const zoneContainer = document.getElementById('bkk_zone_container');
         if (zoneContainer) {
@@ -107,7 +110,6 @@ function handleSpecificChanges(input) {
             else zoneContainer.classList.add('hidden');
         }
     }
-    // ซ่อน/แสดง EV Charger
     if (input.id === 'toggle_ev_charger_visibility') {
         const wrapper = document.getElementById('ev_charger_content_wrapper');
         if (wrapper) {
@@ -121,20 +123,14 @@ function handleSpecificChanges(input) {
     }
 }
 
-function setupCollapsibleCards() {
-    document.querySelectorAll('.collapsible-card h3').forEach(h => {
-        h.addEventListener('click', () => { h.parentElement.classList.toggle('open'); });
-    });
-}
-
-// --- Logic การคำนวณ (ฉบับอัปเดต: รวมระยะห่าง, สายเมน Manual, แร็ค 1 ชุด) ---
+// --- 5. Logic การคำนวณ ---
 function buildQuantitiesFromDOM() {
     const quantities = new Map();
     const addQty = (id, val) => quantities.set(id, (quantities.get(id) || 0) + val);
     const getVal = (id) => parseFloat(document.getElementById(id)?.value) || 0;
     const getInt = (id) => parseInt(document.getElementById(id)?.value) || 0;
 
-    // 1. เมนไฟฟ้า (สาย Manual + แร็คใหม่)
+    // 1. เมนไฟฟ้า
     const ph = document.getElementById('pole_height_7')?.value;
     const pc = getInt('pole_count_7');
     if (pc > 0 && ph !== '0') {
@@ -144,7 +140,7 @@ function buildQuantitiesFromDOM() {
         else if (ph === '9.0') addQty('17.3', pc);
     }
     addQty('17.4-2', getInt('rack_2_sets_7'));
-    addQty('17.4-1', getInt('rack_1_set_7')); // แร็ค 1 ชุด
+    addQty('17.4-1', getInt('rack_1_set_7'));
     
     if (getVal('main_ext_dist_7') > 0) addQty('17.5', getVal('main_ext_dist_7'));
 
@@ -159,13 +155,12 @@ function buildQuantitiesFromDOM() {
     addQty('10.2', getInt('mcb_20a')); 
     addQty('10.3', getInt('mcb_32a'));
 
-    // 3. เต้ารับ (รวมระยะห่าง)
+    // 3. เต้ารับ (รวมระยะห่างเพิ่ม)
     const sc = getInt('socket_circuits');
     const st = document.getElementById('socket_type')?.value;
     for (let i = 1; i <= sc; i++) {
         let dist = getVal(`socket_circuit_${i}_panel_dist`);
-        
-        // บวกระยะเพิ่ม (ซม. แปลงเป็น เมตร)
+        // บวกระยะเพิ่ม (ซม. เป็น เมตร)
         document.querySelectorAll(`input.extra-dist-input[data-circuit="socket-${i}"]`).forEach(inp => {
             dist += (parseFloat(inp.value) || 0) / 100;
         });
@@ -184,13 +179,12 @@ function buildQuantitiesFromDOM() {
         }
     }
 
-    // 4. แสงสว่าง (รวมระยะห่าง)
+    // 4. แสงสว่าง (รวมระยะห่างเพิ่ม)
     const lc = getInt('light_circuits');
     const lt = document.getElementById('light_type')?.value;
     const ft = document.getElementById('fixture_type_1')?.value;
     for (let i = 1; i <= lc; i++) {
         let dist = getVal(`light_circuit_${i}_dist_panel_to_switch`) + getVal(`light_circuit_${i}_dist_switch_to_light`);
-        
         // บวกระยะเพิ่ม (เมตร)
         document.querySelectorAll(`input.extra-dist-input[data-circuit="light-${i}"]`).forEach(inp => {
             dist += (parseFloat(inp.value) || 0);
@@ -290,7 +284,7 @@ function displayReport() {
     document.getElementById('report-content').innerHTML = generateReport(costs, activeTab).html;
 }
 
-// Export Functions
+// --- 6. ฟังก์ชันเสริม (Export/Helpers) ---
 function setupExportButtons() {
     const savePdfBtn = document.getElementById('save-pdf-btn');
     const saveImageBtn = document.getElementById('save-image-btn');
@@ -305,7 +299,6 @@ function setupExportButtons() {
                 const doc = new jsPDF('p', 'mm', 'a4');
                 const element = document.getElementById('output-section');
                 
-                // Hide buttons
                 const buttons = element.querySelectorAll('button, .no-print');
                 buttons.forEach(b => b.style.display = 'none');
 
@@ -341,6 +334,12 @@ function setupExportButtons() {
             });
         });
     }
+}
+
+function setupCollapsibleCards() {
+    document.querySelectorAll('.collapsible-card h3').forEach(h => {
+        h.addEventListener('click', () => { h.parentElement.classList.toggle('open'); });
+    });
 }
 
 function setupManualJobListeners() {

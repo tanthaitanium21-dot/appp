@@ -1,4 +1,4 @@
-﻿// modules/ui_renderer.js
+// modules/ui_renderer.js
 // จัดการ DOM Elements และ HTML Strings
 
 export function renderCircuitInputs(prefix, count, container) {
@@ -6,28 +6,70 @@ export function renderCircuitInputs(prefix, count, container) {
     if (count <= 0) return;
     
     let html = '';
+    // ปรับ Label ให้ตรงตามที่ User ต้องการ
+    const distLabel = prefix === 'light' 
+        ? `<div><label class="text-sm text-slate-600">ระยะตู้→สวิตช์ (ม.)</label><input type="number" id="${prefix}_circuit_${i}_dist_panel_to_switch" class="form-input mt-1 w-full" placeholder="0"></div>
+           <div><label class="text-sm text-slate-600">ระยะสวิตช์→โคม (ม.)</label><input type="number" id="${prefix}_circuit_${i}_dist_switch_to_light" class="form-input mt-1 w-full" placeholder="0"></div>`
+        : `<div><label class="text-sm text-slate-600">ระยะตู้ไฟถึงจุดแรก (ม.)</label><input type="number" id="${prefix}_circuit_${i}_panel_dist" class="form-input mt-1 w-full" placeholder="0"></div>`;
+
     for (let i = 1; i <= count; i++) {
+        let circuitDistHtml = '';
+        if (prefix === 'light') {
+             circuitDistHtml = `
+                <div class="grid grid-cols-2 gap-2">
+                    <div><label class="text-xs text-slate-500">ตู้→สวิตช์ (ม.)</label><input type="number" id="light_circuit_${i}_dist_panel_to_switch" class="form-input mt-1 w-full" placeholder="0"></div>
+                    <div><label class="text-xs text-slate-500">สวิตช์→โคม (ม.)</label><input type="number" id="light_circuit_${i}_dist_switch_to_light" class="form-input mt-1 w-full" placeholder="0"></div>
+                </div>`;
+        } else {
+             circuitDistHtml = `<div><label class="text-sm text-slate-600">ระยะตู้ไฟถึงจุดแรก (ม.)</label><input type="number" id="socket_circuit_${i}_panel_dist" class="form-input mt-1 w-full" placeholder="0"></div>`;
+        }
+
         html += `
             <div class="circuit-container" data-circuit-id="${prefix}-${i}">
                 <p class="font-semibold text-gray-800">วงจรที่ ${i}</p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 mt-2">
-                    <label class="text-sm text-slate-600">ระยะทางในวงจรนี้ (เมตร)</label>
-                    ${prefix === 'light' 
-                    ? `<div class="grid grid-cols-2 gap-2">
-                        <div><input type="number" id="${prefix}_circuit_${i}_dist_panel_to_switch" class="form-input mt-1 block w-full sm:text-sm dist-part-input" placeholder="ตู้→สวิตช์" min="0"><p class="text-xs text-slate-500 mt-1">ตู้→สวิตช์</p></div>
-                        <div><input type="number" id="${prefix}_circuit_${i}_dist_switch_to_light" class="form-input mt-1 block w-full sm:text-sm dist-part-input" placeholder="สวิตช์→โคม" min="0"><p class="text-xs text-slate-500 mt-1">สวิตช์→โคม</p></div>
-                       </div><input type="hidden" id="${prefix}_circuit_${i}_panel_dist" class="dist-input">`
-                    : `<div><input type="number" id="${prefix}_circuit_${i}_panel_dist" class="form-input mt-1 block w-full sm:text-sm" placeholder="0" min="0"></div>`
-                    }
+                    ${circuitDistHtml}
                     <div>
-                        <label for="${prefix}_circuit_${i}_points" class="text-sm text-slate-600">จำนวนจุด</label>
-                        <input type="number" id="${prefix}_circuit_${i}_points" data-point-control-for="${prefix}-${i}" class="point-count-input form-input mt-1 block w-full sm:text-sm" placeholder="จุด" min="1">
+                        <label class="text-sm text-slate-600">จำนวนจุดในวงจร</label>
+                        <input type="number" id="${prefix}_circuit_${i}_points" data-prefix="${prefix}" data-index="${i}" class="point-count-input form-input mt-1 block w-full" placeholder="1" min="1" value="1">
                     </div>
                 </div>
-                <div id="inter_point_container_${prefix}-${i}" class="mt-3"></div>
+                <!-- พื้นที่สำหรับช่องกรอกระยะห่างเพิ่มเติม -->
+                <div id="${prefix}_circuit_${i}_extra_dist_container" class="mt-3 pl-4 border-l-2 border-blue-100"></div>
             </div>
         `;
     }
+    container.innerHTML = html;
+}
+
+// ฟังก์ชันใหม่: สร้างช่องกรอกระยะห่างระหว่างจุด (ไดนามิก)
+export function renderDynamicInputs(prefix, circuitIndex, points) {
+    const container = document.getElementById(`${prefix}_circuit_${circuitIndex}_extra_dist_container`);
+    if (!container) return;
+
+    if (points <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = `<p class="text-xs text-blue-600 font-semibold mb-2">ระยะห่างระหว่างจุดเพิ่ม (ระบุตามจริง):</p>`;
+    html += `<div class="grid grid-cols-2 gap-2">`;
+    
+    const unitLabel = prefix === 'socket' ? 'ซม.' : 'ม.';
+    
+    for (let j = 1; j < points; j++) {
+        const label = prefix === 'socket' 
+            ? `จุดที่ ${j} → ${j+1} (ซม.)` 
+            : `จุดที่ ${j} → ${j+1} (ม.)`;
+            
+        html += `
+            <div>
+                <label class="text-[10px] text-slate-500">${label}</label>
+                <input type="number" class="extra-dist-input form-input w-full py-1 text-sm" data-circuit="${prefix}-${circuitIndex}" placeholder="0">
+            </div>
+        `;
+    }
+    html += `</div>`;
     container.innerHTML = html;
 }
 
@@ -38,20 +80,17 @@ export function renderDedicatedCircuitInputs(prefix, count, container) {
     const isAc = prefix === 'ac_wiring';
     const unitSelectorLabel = isAc ? 'ขนาด BTU' : 'ขนาด Watt';
     const unitOptions = isAc 
-        ? `<option value="12000">9,000 - 12,000 BTU</option><option value="18000">12,001 - 18,000 BTU</option><option value="24000">18,001 - 24,000 BTU</option><option value="30000">&gt; 24,000 BTU</option>`
-        : `<option value="3500">&lt; 3,500 W</option><option value="4500">3,501 - 4,500 W</option><option value="6000">4,501 - 6,000 W</option><option value="8000">&gt; 6,000 W</option>`;
+        ? `<option value="12000">9-12k BTU</option><option value="18000">12-18k BTU</option><option value="24000">18-24k BTU</option><option value="30000">>24k BTU</option>`
+        : `<option value="3500"><3.5kW</option><option value="4500">3.5-4.5kW</option><option value="6000">4.5-6kW</option>`;
 
     let html = '';
     for (let i = 1; i <= count; i++) {
         html += `
-            <div class="circuit-container" data-circuit-id="${prefix}-${i}">
+            <div class="circuit-container">
                 <p class="font-semibold text-gray-800">เครื่องที่ ${i}</p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 mt-2">
-                    <div><label class="text-sm text-slate-600">${unitSelectorLabel}</label><select id="${prefix}_${i}_unit_size" data-breaker-target="${prefix}_${i}_breaker" class="unit-size-selector form-input mt-1 block w-full sm:text-sm">${unitOptions}</select></div>
-                    <div><label class="text-sm text-slate-600">เบรกเกอร์แนะนำ</label><p id="${prefix}_${i}_breaker" class="mt-1 p-2 bg-slate-100 rounded-md text-slate-800 font-medium h-[38px] flex items-center">--</p></div>
-                    <div><label class="text-sm text-slate-600">ระยะ ตู้→เบรกเกอร์ (ม.)</label><input type="number" id="${prefix}_${i}_panel_to_breaker_dist" class="dist-input form-input mt-1 block w-full sm:text-sm" placeholder="เมตร" min="0"></div>
-                    <div><label class="text-sm text-slate-600">ระยะ เบรกเกอร์→เครื่อง (ม.)</label><input type="number" id="${prefix}_${i}_breaker_to_unit_dist" class="dist-input form-input mt-1 block w-full sm:text-sm" placeholder="เมตร" min="0"></div>
-                    <div class="md:col-span-2"><label class="text-sm text-slate-600">ระยะสายดิน (ม.)</label><input type="number" id="${prefix}_${i}_panel_to_unit_dist_ground" class="dist-input form-input mt-1 block w-full sm:text-sm" placeholder="เมตร" min="0"></div>
+                    <div><label class="text-sm text-slate-600">${unitSelectorLabel}</label><select id="${prefix}_${i}_unit_size" class="form-input mt-1 w-full">${unitOptions}</select></div>
+                    <div><label class="text-sm text-slate-600">ระยะตู้→เครื่อง (ม.)</label><input type="number" id="${prefix}_${i}_dist" class="form-input mt-1 w-full" placeholder="0"></div>
                 </div>
             </div>`;
     }

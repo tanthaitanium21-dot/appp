@@ -1,5 +1,5 @@
 // main.js
-// เวอร์ชันสมบูรณ์ (Fixed: renderAppUI Missing)
+// ฉบับสมบูรณ์: แก้ไข Error renderAppUI is not defined
 
 import { provinces } from './data/provinces.js';
 import { calculateProjectCost, getPriceList, setPrice, getAllItems } from './modules/calculator.js';
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', initApp);
 function initApp() {
     console.log("App Starting...");
     
-    // สร้างหน้าจอ (Render UI)
+    // สร้างหน้าจอ (Render UI) - ถ้าไม่มีบรรทัดนี้ หน้าจะขาว
     renderAppUI();
 
     // ตั้งค่าข้อมูลพื้นฐาน
@@ -38,7 +38,7 @@ function initApp() {
     console.log("App Initialized Successfully!");
 }
 
-// --- 2. ฟังก์ชันสร้างหน้าจอ (ต้องมีตัวนี้ Error ถึงจะหาย) ---
+// --- 2. ฟังก์ชันสร้างหน้าจอ (ต้องมี!) ---
 function renderAppUI() {
     const ids = ['app-project-info', 'app-work-details', 'app-settings', 'app-summary', 'app-manual-job'];
     const renderers = [renderProjectInfoCard, renderWorkDetails, renderSettingsCard, renderSummaryCard, renderJobCostingSection];
@@ -60,9 +60,8 @@ function setupStaticData() {
     if (dateEl) dateEl.valueAsDate = new Date();
 }
 
-// --- 4. ฟังก์ชันจัดการ Event (การคลิก/พิมพ์) ---
+// --- 4. ฟังก์ชันจัดการ Event ---
 function setupEventListeners() {
-    // ดักจับการเปลี่ยนแปลงข้อมูลทั้งหมด
     document.body.addEventListener('change', (e) => {
         if (e.target.matches('input, select')) updateRealtimeTotal();
         handleSpecificChanges(e.target);
@@ -70,7 +69,6 @@ function setupEventListeners() {
     document.body.addEventListener('input', (e) => {
         if (e.target.matches('input[type="number"], input[type="text"]')) updateRealtimeTotal();
         
-        // กรณีมีการกรอกจำนวนจุด -> ให้สร้างช่องกรอกระยะห่าง
         if (e.target.classList.contains('point-count-input')) {
             const prefix = e.target.dataset.prefix;
             const index = e.target.dataset.index;
@@ -80,13 +78,11 @@ function setupEventListeners() {
         }
     });
     
-    // ตั้งค่า Listener เริ่มต้นสำหรับวงจรไฟฟ้า
     setupDynamicListener('socket_circuits', 'socket', 'socket_circuits_container');
     setupDynamicListener('light_circuits', 'light', 'light_circuits_container');
     setupDynamicListener('ac_wiring_units', 'ac_wiring', 'ac_wiring_circuits_container');
     setupDynamicListener('heater_wiring_units', 'heater_wiring', 'heater_wiring_circuits_container');
 
-    // ปุ่มคำนวณ
     const calcBtn = document.getElementById('calculate-btn');
     if (calcBtn) calcBtn.addEventListener('click', displayReport);
 }
@@ -160,7 +156,6 @@ function buildQuantitiesFromDOM() {
     const st = document.getElementById('socket_type')?.value;
     for (let i = 1; i <= sc; i++) {
         let dist = getVal(`socket_circuit_${i}_panel_dist`);
-        // บวกระยะเพิ่ม (ซม. เป็น เมตร)
         document.querySelectorAll(`input.extra-dist-input[data-circuit="socket-${i}"]`).forEach(inp => {
             dist += (parseFloat(inp.value) || 0) / 100;
         });
@@ -185,7 +180,6 @@ function buildQuantitiesFromDOM() {
     const ft = document.getElementById('fixture_type_1')?.value;
     for (let i = 1; i <= lc; i++) {
         let dist = getVal(`light_circuit_${i}_dist_panel_to_switch`) + getVal(`light_circuit_${i}_dist_switch_to_light`);
-        // บวกระยะเพิ่ม (เมตร)
         document.querySelectorAll(`input.extra-dist-input[data-circuit="light-${i}"]`).forEach(inp => {
             dist += (parseFloat(inp.value) || 0);
         });
@@ -284,7 +278,7 @@ function displayReport() {
     document.getElementById('report-content').innerHTML = generateReport(costs, activeTab).html;
 }
 
-// --- 6. ฟังก์ชันเสริม (Export/Helpers) ---
+// --- 6. ฟังก์ชันเสริม ---
 function setupExportButtons() {
     const savePdfBtn = document.getElementById('save-pdf-btn');
     const saveImageBtn = document.getElementById('save-image-btn');

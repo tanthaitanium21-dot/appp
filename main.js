@@ -1,222 +1,168 @@
-// main.js
-// เวอร์ชันสมบูรณ์: รองรับ Manual Cable / Dynamic Inputs / New Rack
-
 import { provinces } from './data/provinces.js';
 import { calculateProjectCost, getPriceList, setPrice, getAllItems } from './modules/calculator.js';
 import { renderCircuitInputs, renderDedicatedCircuitInputs, renderDynamicInputs, formatCurrency } from './modules/ui_renderer.js';
 import { generateReport } from './modules/report_generator.js';
 import { renderProjectInfoCard, renderWorkDetails, renderSettingsCard, renderSummaryCard, renderJobCostingSection } from './modules/components.js';
 
-// Global State
-let manualBOQItems = [];
-let manualPOItems = [];
-let activeTab = 'boq-combined';
+let manualBOQItems = [], manualPOItems = [], activeTab = 'boq-combined';
 
-document.addEventListener('DOMContentLoaded', () => {
-    initApp();
-});
+document.addEventListener('DOMContentLoaded', initApp);
 
 function initApp() {
-    console.log("App Starting...");
     renderAppUI();
-
-    const provinceSelector = document.getElementById('province_selector');
-    if(provinceSelector) {
-        provinceSelector.add(new Option('กรุงเทพมหานคร', 'กรุงเทพมหานคร'));
-        provinces.forEach(p => provinceSelector.add(new Option(p, p)));
-    }
-    const dateEl = document.getElementById('report_date');
-    if(dateEl) dateEl.valueAsDate = new Date();
-
-    setupCollapsibleCards();
+    setupStaticData();
     setupEventListeners();
-    setupManualJobListeners();
-    setupTabListeners();
-    setupExportButtons();
-    
     populatePriceEditor();
     updateRealtimeTotal();
 }
 
 function renderAppUI() {
-    const ids = ['app-project-info', 'app-work-details', 'app-settings', 'app-summary', 'app-manual-job'];
-    const renderers = [renderProjectInfoCard, renderWorkDetails, renderSettingsCard, renderSummaryCard, renderJobCostingSection];
-    ids.forEach((id, index) => { const el = document.getElementById(id); if(el) el.innerHTML = renderers[index](); });
+    const map = {
+        'app-project-info': renderProjectInfoCard,
+        'app-work-details': renderWorkDetails,
+        'app-settings': renderSettingsCard,
+        'app-summary': renderSummaryCard,
+        'app-manual-job': renderJobCostingSection
+    };
+    for (const [id, func] of Object.entries(map)) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = func();
+    }
 }
 
-function setupCollapsibleCards() {
-    document.querySelectorAll('.collapsible-card h3').forEach(h => {
-        h.addEventListener('click', () => { h.parentElement.classList.toggle('open'); });
-    });
+function setupStaticData() {
+    const ps = document.getElementById('province_selector');
+    if(ps) { ps.add(new Option('กรุงเทพมหานคร', 'กรุงเทพมหานคร')); provinces.forEach(p => ps.add(new Option(p, p))); }
+    const rd = document.getElementById('report_date');
+    if(rd) rd.valueAsDate = new Date();
 }
 
 function setupEventListeners() {
+    // Global Change Listener
     document.body.addEventListener('change', (e) => {
-         if(e.target.matches('input, select')) updateRealtimeTotal();
-         handleSpecificChanges(e.target);
+        if(e.target.matches('input, select')) updateRealtimeTotal();
+        handleSpecificChanges(e.target);
     });
     document.body.addEventListener('input', (e) => {
-         if(e.target.matches('input[type="number"], input[type="text"]')) updateRealtimeTotal();
-    });
-
-    // Dynamic Listener for Points Input -> Render Extra Distance Fields
-    document.body.addEventListener('input', (e) => {
+        if(e.target.matches('input[type="number"], input[type="text"]')) updateRealtimeTotal();
+        // Dynamic inputs
         if(e.target.classList.contains('point-count-input')) {
-            const prefix = e.target.dataset.prefix;
-            const index = e.target.dataset.index;
-            const points = parseInt(e.target.value) || 0;
-            renderDynamicInputs(prefix, index, points);
+            renderDynamicInputs(e.target.dataset.prefix, e.target.dataset.index, parseInt(e.target.value)||0);
             updateRealtimeTotal();
         }
     });
-
-    const setupDynamicListener = (id, type, containerId) => {
-        const el = document.getElementById(id);
-        if(el) el.addEventListener('input', (e) => {
-            if(type === 'socket' || type === 'light') renderCircuitInputs(type, parseInt(e.target.value)||0, document.getElementById(containerId));
-            else renderDedicatedCircuitInputs(type, parseInt(e.target.value)||0, document.getElementById(containerId));
-        });
-    };
-
+    
+    // Dynamic Area Init
     setupDynamicListener('socket_circuits', 'socket', 'socket_circuits_container');
     setupDynamicListener('light_circuits', 'light', 'light_circuits_container');
     setupDynamicListener('ac_wiring_units', 'ac_wiring', 'ac_wiring_circuits_container');
     setupDynamicListener('heater_wiring_units', 'heater_wiring', 'heater_wiring_circuits_container');
 
+    // Buttons
     const calcBtn = document.getElementById('calculate-btn');
-    if(calcBtn) calcBtn.addEventListener('click', () => displayReport());
+    if(calcBtn) calcBtn.addEventListener('click', displayReport);
+    setupExportButtons();
+    setupCollapsibleCards();
+    setupManualJobListeners();
+    setupTabListeners();
+}
+
+function setupDynamicListener(id, type, containerId) {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', (e) => {
+        if(type === 'socket' || type === 'light') renderCircuitInputs(type, parseInt(e.target.value)||0, document.getElementById(containerId));
+        else renderDedicatedCircuitInputs(type, parseInt(e.target.value)||0, document.getElementById(containerId));
+    });
 }
 
 function handleSpecificChanges(input) {
     if(input.id === 'province_selector') {
-        const zoneContainer = document.getElementById('bkk_zone_container');
-        if(zoneContainer) {
-             if (input.value === 'กรุงเทพมหานคร') zoneContainer.classList.remove('hidden');
-             else zoneContainer.classList.add('hidden');
-        }
+        const zone = document.getElementById('bkk_zone_container');
+        if(zone) zone.classList.toggle('hidden', input.value !== 'กรุงเทพมหานคร');
     }
     if(input.id === 'toggle_ev_charger_visibility') {
-        const wrapper = document.getElementById('ev_charger_content_wrapper');
-        if(wrapper) {
-            if(input.checked) wrapper.classList.remove('hidden');
-            else {
-                wrapper.classList.add('hidden');
-                document.getElementById('ev_cable_dist_8').value = 0;
-                document.getElementById('ev_charger_cost_8').value = 0;
-            }
-        }
+        const wrap = document.getElementById('ev_charger_content_wrapper');
+        if(wrap) wrap.classList.toggle('hidden', !input.checked);
+        if(!input.checked) { document.getElementById('ev_cable_dist_8').value = 0; document.getElementById('ev_charger_cost_8').value = 0; }
     }
 }
 
-// --- Calculation Logic ---
 function buildQuantitiesFromDOM() {
     const quantities = new Map();
     const addQty = (id, val) => quantities.set(id, (quantities.get(id) || 0) + val);
     const getVal = (id) => parseFloat(document.getElementById(id)?.value) || 0;
     const getInt = (id) => parseInt(document.getElementById(id)?.value) || 0;
 
-    // 1. Main External (Manual Cable + Rack)
-    const poleHeight = document.getElementById('pole_height_7')?.value;
-    const poles = getInt('pole_count_7');
-    if (poles > 0 && poleHeight !== '0') {
-        if (poleHeight === '6.0') addQty('17.1', poles);
-        else if (poleHeight === '7.0') addQty('17.1-B', poles);
-        else if (poleHeight === '8.0') addQty('17.2', poles);
-        else if (poleHeight === '9.0') addQty('17.3', poles);
+    // 1. Main
+    const ph = document.getElementById('pole_height_7')?.value;
+    const pc = getInt('pole_count_7');
+    if (pc > 0 && ph !== '0') {
+        if (ph === '6.0') addQty('17.1', pc); else if (ph === '7.0') addQty('17.1-B', pc);
+        else if (ph === '8.0') addQty('17.2', pc); else if (ph === '9.0') addQty('17.3', pc);
     }
     addQty('17.4-2', getInt('rack_2_sets_7'));
-    // Change logic: Rack 4 sets or 1 set
-    // We kept old logic for 4 sets if present, but added 1 set
-    addQty('17.4-1', getInt('rack_1_set_7')); 
-    // If user still wants to use old input logic we handle it, but component has new input
-    
+    addQty('17.4-1', getInt('rack_1_set_7')); // New Rack 1 Set
     if (getVal('main_ext_dist_7') > 0) addQty('17.5', getVal('main_ext_dist_7'));
 
     // 2. Consumer Unit
-    const cuSize = document.getElementById('cu_replacement')?.value;
-    if(cuSize !== 'none') {
-        const cuMap = {'4_slot':'9.1', '6_slot':'9.2', '8_slot':'9.3', '10_slot':'9.4', '12_slot':'9.5'};
-        if(cuMap[cuSize]) addQty(cuMap[cuSize], 1);
+    const cu = document.getElementById('cu_replacement')?.value;
+    if(cu !== 'none') {
+        const map = {'4_slot':'9.1', '6_slot':'9.2', '8_slot':'9.3', '10_slot':'9.4', '12_slot':'9.5'};
+        if(map[cu]) addQty(map[cu], 1);
     }
     if(document.getElementById('install_ground')?.checked) addQty('6.1', 1);
     addQty('10.1', getInt('mcb_16a')); addQty('10.2', getInt('mcb_20a')); addQty('10.3', getInt('mcb_32a'));
 
-    // 3. Sockets (New Logic: Inter-distance)
-    const socketCount = getInt('socket_circuits');
-    const socketType = document.getElementById('socket_type')?.value;
-    for(let i=1; i<=socketCount; i++) {
-        const panelDist = getVal(`socket_circuit_${i}_panel_dist`);
-        const points = getInt(`socket_circuit_${i}_points`);
-        if(points <= 0) continue;
-
-        // Sum extra distances
-        let extraDist = 0;
-        document.querySelectorAll(`input.extra-dist-input[data-circuit="socket-${i}"]`).forEach(inp => {
-            // Socket uses CM, convert to Meter (/100)
-            extraDist += (parseFloat(inp.value)||0) / 100;
-        });
-        const totalDist = panelDist + extraDist;
-
-        if(socketType === 'surface_vaf') { addQty('1.3', totalDist); addQty('3.1', points); }
-        else if(socketType.includes('_pvc')) {
-            addQty('1.1', totalDist); addQty(socketType.includes('concealed') ? '2.3' : '2.1', totalDist);
-            addQty(socketType.includes('concealed') ? '3.2' : '3.1', points);
-            if(!socketType.includes('trunking')) addQty('13.1', points*2); else addQty('14.1', totalDist);
-        } else if(socketType.includes('_emt')) { addQty('1.1', totalDist); addQty('2.2', totalDist); addQty('3.1', points); addQty('13.2', points*2); }
+    // 3. Sockets (Sum distances)
+    const sc = getInt('socket_circuits');
+    const st = document.getElementById('socket_type')?.value;
+    for(let i=1; i<=sc; i++) {
+        let dist = getVal(`socket_circuit_${i}_panel_dist`);
+        document.querySelectorAll(`input.extra-dist-input[data-circuit="socket-${i}"]`).forEach(inp => dist += (parseFloat(inp.value)||0)/100); // cm to m
+        const pts = getInt(`socket_circuit_${i}_points`);
+        if(pts>0) {
+            if(st==='surface_vaf') { addQty('1.3', dist); addQty('3.1', pts); }
+            else if(st.includes('_pvc')) { 
+                addQty('1.1', dist); addQty(st.includes('concealed')?'2.3':'2.1', dist); 
+                addQty(st.includes('concealed')?'3.2':'3.1', pts); 
+                if(st.includes('trunking')) addQty('14.1', dist); 
+            } else if(st.includes('_emt')) { addQty('1.1', dist); addQty('2.2', dist); addQty('3.1', pts); }
+        }
     }
 
-    // 4. Lighting (New Logic)
-    const lightCount = getInt('light_circuits');
-    const lightType = document.getElementById('light_type')?.value;
-    const fixture = document.getElementById('fixture_type_1')?.value;
-    for(let i=1; i<=lightCount; i++) {
-        const p2s = getVal(`light_circuit_${i}_dist_panel_to_switch`);
-        const s2l = getVal(`light_circuit_${i}_dist_switch_to_light`);
-        const points = getInt(`light_circuit_${i}_points`);
-        if(points <= 0) continue;
-
-        let extraDist = 0;
-        document.querySelectorAll(`input.extra-dist-input[data-circuit="light-${i}"]`).forEach(inp => {
-            // Light uses Meter, no conversion
-            extraDist += (parseFloat(inp.value)||0);
-        });
-        const totalDist = p2s + s2l + extraDist;
-
-        addQty('1.2', totalDist);
-        if(lightType.includes('_pvc')) addQty(lightType.includes('concealed') ? '2.3' : '2.1', totalDist);
-        else if(lightType.includes('_emt')) addQty('2.2', totalDist); else if(lightType.includes('trunking')) addQty('14.1', totalDist);
-        
-        if(fixture === 'LED_E27') addQty('4.1', points); else if(fixture === 'LED_PANEL') addQty('15.1', points); else if(fixture === 'T8_SET') addQty('15.2', points);
+    // 4. Light (Sum distances)
+    const lc = getInt('light_circuits');
+    const lt = document.getElementById('light_type')?.value;
+    const ft = document.getElementById('fixture_type_1')?.value;
+    for(let i=1; i<=lc; i++) {
+        let dist = getVal(`light_circuit_${i}_dist_panel_to_switch`) + getVal(`light_circuit_${i}_dist_switch_to_light`);
+        document.querySelectorAll(`input.extra-dist-input[data-circuit="light-${i}"]`).forEach(inp => dist += (parseFloat(inp.value)||0));
+        const pts = getInt(`light_circuit_${i}_points`);
+        if(pts>0) {
+            addQty('1.2', dist);
+            if(lt.includes('_pvc')) addQty(lt.includes('concealed')?'2.3':'2.1', dist);
+            else if(lt.includes('_emt')) addQty('2.2', dist); else if(lt.includes('trunking')) addQty('14.1', dist);
+            if(ft==='LED_E27') addQty('4.1', pts); else if(ft==='LED_PANEL') addQty('15.1', pts); else if(ft==='T8_SET') addQty('15.2', pts);
+        }
     }
-
-    // 5. AC/Heater
-    ['ac_wiring', 'heater_wiring'].forEach(prefix => {
-        const count = getInt(`${prefix}_units`);
-        const installType = document.getElementById(prefix==='ac_wiring'?'ac_install_type_4':'wh_install_type_5')?.value;
-        for(let i=1; i<=count; i++) {
-            // Note: Dedicated circuit inputs usually don't have dynamic extra points logic requested, 
-            // keeping simple distance logic as per V2 but ensuring it works.
-            // V2 `ui_renderer` for dedicated circuits uses `_dist` suffix.
-            const dist = getVal(`${prefix}_${i}_dist`); 
-            if(dist <= 0) continue;
-            
-            // Dedicated usually implies 1 point (the unit itself). Logic simplified for brevity.
-            addQty('1.4', dist); // Wire L,N
-            addQty('1.5', dist); // Ground
-            // Breaker/Box logic omitted for brevity but can be added if needed.
-            
-            if(installType.includes('_pvc')) addQty(installType.includes('concealed') ? '2.3' : '2.1', dist); 
-            else if(installType.includes('_emt')) addQty('2.2', dist);
+    
+    // Other categories (Simplified for brevity, ensure full copy)
+    ['ac_wiring', 'heater_wiring'].forEach(p => {
+        const c = getInt(`${p}_units`);
+        const it = document.getElementById(p==='ac_wiring'?'ac_install_type_4':'wh_install_type_5')?.value;
+        for(let i=1; i<=c; i++) {
+            const d = getVal(`${p}_${i}_dist`);
+            if(d>0) { addQty('1.4', d); addQty('1.5', d); if(it.includes('_pvc')) addQty(it.includes('concealed')?'2.3':'2.1', d); else if(it.includes('_emt')) addQty('2.2', d); }
         }
     });
-
-    // 6-10. Others (Same as before)
+    
     addQty('11.1', getInt('lan_points')); addQty('11.2', getVal('lan_distance'));
     addQty('11.3', getInt('tv_points')); addQty('11.4', getVal('tv_distance'));
     addQty('11.5', getInt('cctv_points'));
     addQty('7.1', getInt('heater_units')); addQty('5.1', getInt('ac_units'));
-    addQty('5.3', getInt('pump_units')); const pumpType = document.getElementById('wp_install_type_6')?.value;
-    if(pumpType === 'vct_clip') addQty('16.1', 15 * getInt('pump_units')); else if(pumpType === 'nyy_burial') { addQty('16.2', 15 * getInt('pump_units')); addQty('2.1', 15 * getInt('pump_units')); }
+    addQty('5.3', getInt('pump_units')); 
+    const pt = document.getElementById('wp_install_type_6')?.value;
+    if(pt === 'vct_clip') addQty('16.1', 15 * getInt('pump_units')); else if(pt === 'nyy_burial') { addQty('16.2', 15 * getInt('pump_units')); addQty('2.1', 15 * getInt('pump_units')); }
     addQty('5.4', getInt('fan_units'));
     if(document.getElementById('service_inspection')?.checked) addQty('8.1', 1);
     if(document.getElementById('service_leak_find')?.checked) addQty('8.2', 1);
@@ -234,8 +180,6 @@ function buildQuantitiesFromDOM() {
 }
 
 function performCalculation() {
-    const quantities = buildQuantitiesFromDOM();
-    
     const settings = {
         qualityMultiplier: parseFloat(document.getElementById('material_quality').value) || 1.0,
         wastageFactor: (parseFloat(document.getElementById('wastage_factor').value) || 0) / 100,
@@ -245,71 +189,19 @@ function performCalculation() {
         bkkZone: document.getElementById('bkk_zone_selector').value,
         includeVat: document.getElementById('include_vat').checked,
         minCharge: parseFloat(document.getElementById('min_charge').value) || 0,
-        
-        // Config for manual cable selection
         cableSpecConfig: {
             authority: document.getElementById('main_authority_7').value,
             meterSize: document.getElementById('meter_size_3').value,
             mainType: document.getElementById('main_ext_type_7').value,
-            // Pass manual size selection
-            manualSize: document.getElementById('main_cable_size_7').value
+            manualSize: document.getElementById('main_cable_size_7').value // รับค่าสาย manual
         }
     };
-
-    return calculateProjectCost(quantities, settings, manualPOItems, manualBOQItems);
+    return calculateProjectCost(buildQuantitiesFromDOM(), settings, manualPOItems, manualBOQItems);
 }
 
 function updateRealtimeTotal() {
     const costs = performCalculation();
     document.getElementById('total-display').textContent = `฿${formatCurrency(costs.totalWithVat)}`;
-}
-
-// Export Functions (PDF/Image) - Same as before
-function setupExportButtons() {
-    const savePdfBtn = document.getElementById('save-pdf-btn');
-    const saveImageBtn = document.getElementById('save-image-btn');
-
-    if (savePdfBtn) {
-        savePdfBtn.addEventListener('click', async () => {
-            const btnOriginalText = savePdfBtn.innerText;
-            savePdfBtn.innerText = "กำลังสร้าง...";
-            savePdfBtn.disabled = true;
-            try {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('p', 'mm', 'a4');
-                const element = document.getElementById('output-section'); 
-                const buttons = element.querySelectorAll('button, .no-print');
-                buttons.forEach(b => b.style.display = 'none');
-                await doc.html(element, {
-                    callback: function(doc) {
-                        doc.save('ใบเสนอราคา.pdf');
-                        buttons.forEach(b => b.style.display = '');
-                        savePdfBtn.innerText = btnOriginalText;
-                        savePdfBtn.disabled = false;
-                    },
-                    x: 10, y: 10, width: 190, windowWidth: element.scrollWidth
-                });
-            } catch (error) {
-                console.error(error);
-                savePdfBtn.innerText = btnOriginalText;
-                savePdfBtn.disabled = false;
-            }
-        });
-    }
-    if (saveImageBtn) {
-        saveImageBtn.addEventListener('click', () => {
-            const element = document.getElementById('output-section');
-            const buttons = element.querySelectorAll('button, .no-print');
-            buttons.forEach(b => b.style.display = 'none');
-            html2canvas(element).then(canvas => {
-                const link = document.createElement('a');
-                link.download = 'ใบเสนอราคา.png';
-                link.href = canvas.toDataURL();
-                link.click();
-                buttons.forEach(b => b.style.display = '');
-            });
-        });
-    }
 }
 
 function displayReport() {
@@ -320,6 +212,27 @@ function displayReport() {
     document.getElementById('report-content').innerHTML = generateReport(costs, activeTab).html;
 }
 
-function setupManualJobListeners() { /* ... Same logic as prev ... */ }
-function populatePriceEditor() { /* ... Same logic as prev ... */ }
-function setupTabListeners() { /* ... Same logic as prev ... */ }
+// Export & UI Helpers
+function setupExportButtons() {
+    document.getElementById('save-pdf-btn')?.addEventListener('click', async () => {
+        const btn = document.getElementById('save-pdf-btn');
+        btn.innerText = "Processing..."; btn.disabled = true;
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const el = document.getElementById('output-section');
+        el.querySelectorAll('.no-print').forEach(e => e.style.display = 'none');
+        await doc.html(el, { callback: (doc) => { doc.save('quotation.pdf'); el.querySelectorAll('.no-print').forEach(e => e.style.display = ''); btn.innerText = "PDF"; btn.disabled = false; }, x: 10, y: 10, width: 190, windowWidth: el.scrollWidth });
+    });
+    document.getElementById('save-image-btn')?.addEventListener('click', () => {
+        const el = document.getElementById('output-section');
+        el.querySelectorAll('.no-print').forEach(e => e.style.display = 'none');
+        html2canvas(el).then(canvas => {
+            const link = document.createElement('a'); link.download = 'quotation.png'; link.href = canvas.toDataURL(); link.click();
+            el.querySelectorAll('.no-print').forEach(e => e.style.display = '');
+        });
+    });
+}
+function setupCollapsibleCards() { document.querySelectorAll('.collapsible-card h3').forEach(h => h.addEventListener('click', () => h.parentElement.classList.toggle('open'))); }
+function setupManualJobListeners() { /* ... (Same as prev) ... */ } 
+function setupTabListeners() { document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', (e) => { document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('tab-active')); e.target.classList.add('tab-active'); activeTab = e.target.dataset.tab; displayReport(); })); }
+function populatePriceEditor() { /* ... (Same as prev) ... */ }

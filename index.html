@@ -3,66 +3,37 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Construction Calculator V2 (Final Fixed)</title>
-    
-    <!-- ป้องกัน Error 404 favicon -->
+    <title>Construction Calculator V2 (Final)</title>
     <link rel="icon" href="data:,">
-
-    <!-- โหลด CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="./assets/style.css" rel="stylesheet"/>
-    
-    <!-- โหลด Libraries สำหรับ PDF/Image -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body class="antialiased">
-
 <div class="container mx-auto p-4 md:p-8">
-    <!-- Header -->
     <header class="text-center mb-10 no-print">
         <h1 class="text-5xl font-bold text-blue-600 tracking-tight">ราคากลาง V2 <span class="text-3xl text-amber-500">Modular</span></h1>
         <p class="text-xl text-slate-500 mt-2">ระบบคำนวณโครงสร้างใหม่ (ฉบับสมบูรณ์)</p>
     </header>
-
-    <!-- ส่วนที่ 1: ข้อมูลโครงการ -->
     <div id="app-project-info" class="mb-6 no-print"></div>
-
     <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- คอลัมน์ซ้าย: รายละเอียดงาน -->
         <div id="app-work-details" class="lg:col-span-2 space-y-6"></div>
-
-        <!-- คอลัมน์ขวา: ตั้งค่า & สรุปผล -->
         <div class="sticky top-8 space-y-6">
             <div id="app-settings"></div>
             <div id="app-summary"></div>
         </div>
     </main>
-
-    <!-- ส่วนที่ 4: เอกสารประมาณราคา -->
     <section class="mt-12 bg-white p-6 rounded-lg shadow-lg hidden" id="output-section">
         <div class="flex justify-between items-center border-b pb-2 mb-4 no-print">
             <h2 class="text-2xl font-bold text-blue-600">4. เอกสารประมาณราคา</h2>
-            
-            <!-- ปุ่มคำสั่งต่างๆ -->
             <div class="flex items-center gap-2">
-                <button id="save-pdf-btn" class="no-print bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 flex items-center">
-                    บันทึก PDF
-                </button>
-                <button id="save-image-btn" class="no-print bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center">
-                    บันทึกภาพ
-                </button>
-                <button onclick="window.print()" class="no-print bg-gray-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-800 flex items-center">
-                    พิมพ์
-                </button>
+                <button id="save-pdf-btn" class="no-print bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700">PDF</button>
+                <button id="save-image-btn" class="no-print bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Image</button>
+                <button onclick="window.print()" class="no-print bg-gray-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-800">Print</button>
             </div>
         </div>
-        <p class="text-right text-sm h-5 mb-2" id="print-status"></p>
-
-        <!-- ส่วนเพิ่มงานเอง (Manual Job) -->
         <div id="app-manual-job"></div>
-
-        <!-- Tabs เมนู -->
         <div class="no-print border-b border-gray-200">
             <nav aria-label="Tabs" class="-mb-px flex space-x-6">
                 <button class="tab-btn tab-active py-2 px-1 border-b-2 font-medium text-sm" data-tab="boq-combined">BOQ รวม</button>
@@ -71,14 +42,10 @@
                 <button class="tab-btn py-2 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="purchase-order">ใบสั่งซื้อ</button>
             </nav>
         </div>
-        
-        <!-- พื้นที่แสดงผลตาราง -->
         <div class="mt-4" id="report-content"></div>
     </section>
-    
     <div class="hidden" id="print-area"></div>
 </div>
-
 <script type="module" src="./main.js"></script>
 </body>
 </html>

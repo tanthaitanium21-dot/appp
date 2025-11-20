@@ -1,0 +1,117 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>'ราคากลาง' งานไฟฟ้า V1 Master (Modular)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet" />
+    
+    <!-- โหลดสคริปต์ที่แยกไว้ -->
+    <script src="js/core.js"></script>
+    <script src="js/electrical.js"></script>
+    
+    <style>
+        /* CSS เดิมจาก V6 (ย่อเพื่อความกระชับ) */
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f9; color: #334155; }
+        .config-card { background-color: white; border-radius: 0.75rem; padding: 1.5rem; border-left: 4px solid #3b82f6; transition: all 0.2s; }
+        .form-input { border-radius: 0.5rem; border: 1px solid #cbd5e1; width: 100%; padding: 0.5rem; }
+        .btn { border-radius: 0.5rem; padding: 0.75rem 1rem; cursor: pointer; }
+        .btn-primary { background-image: linear-gradient(to right, #3b82f6, #2563eb); color: white; }
+        .collapsible-card > *:not(h3) { display: none; }
+        .collapsible-card.open > * { display: block; }
+        .collapsible-card h3 { cursor: pointer; display: flex; justify-content: space-between; }
+        .collapsible-card h3::after { content: "▶"; font-size: 0.8em; transition: transform .2s; }
+        .collapsible-card.open h3::after { content: "▼"; }
+        .status-badge { position: fixed; top: 10px; right: 10px; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; z-index: 9999; }
+        .status-loading { background-color: #e0f2fe; color: #0369a1; }
+        .status-success { background-color: #dcfce7; color: #166534; }
+        @media print { .no-print { display: none; } #output-section { display: block !important; } }
+    </style>
+</head>
+<body class="antialiased pb-20">
+
+<!-- (HTML ส่วน UI เหมือนเดิมทุกประการ - Copy จาก V1 Master มาวางที่นี่) -->
+<!-- เพื่อความกระชับของคำตอบ ผมจะละส่วน HTML Body ที่ซ้ำเดิมไว้ -->
+<!-- คุณสามารถใช้ HTML Body จากไฟล์ v1_master.html ก่อนหน้าได้เลยครับ -->
+<!-- เพียงแค่ลบส่วน <script>...</script> ด้านล่างสุดออก แล้วแทนที่ด้วยโค้ด Main Logic นี้: -->
+
+<div id="system-status" class="status-badge status-loading">⏳ เริ่มต้นระบบ...</div>
+
+<!-- ... (HTML Inputs & Output Section) ... -->
+
+<script>
+// ==========================================
+// MAIN APPLICATION LOGIC
+// ==========================================
+const GITHUB_DATA_URL = "https://raw.githubusercontent.com/tanthaitanium21-dot/appp/refs/heads/main/data.json";
+
+// Global State
+let priceList = {};
+let electricalData = [];
+const allTasks = new Map();
+const allItems = new Map();
+let manualBOQItems = [];
+let manualPOItems = [];
+
+async function initApp() {
+    // 1. โหลดข้อมูลผ่าน Core System
+    const success = await Core.loadDatabase(GITHUB_DATA_URL);
+    if (!success) return;
+
+    const data = Core.data;
+    priceList = data.priceList || {};
+    electricalData = data.electrical_installation_data || [];
+
+    // 2. เตรียมข้อมูลสำหรับค้นหา (Indexing)
+    electricalData.forEach(c => {
+        c.tasks.forEach(t => {
+            allTasks.set(t.task_id, t);
+            t.labor_components?.forEach(l => allItems.set(l.labor_id, { desc: `ค่าแรง: ${t.task_name}`}));
+            t.material_components?.forEach(m => allItems.set(m.material_id, { desc: m.spec }));
+        });
+    });
+
+    // 3. สร้าง UI (Dropdown จังหวัด, ตารางราคา)
+    const select = Core.el('province_selector');
+    if(select && data.config.provinces) {
+        select.innerHTML = '';
+        data.config.provinces.forEach(p => select.add(new Option(p, p)));
+        select.value = 'นนทบุรี';
+    }
+    // ... (Render Price Table Code) ...
+
+    // 4. ผูก Event Listeners
+    document.body.addEventListener('input', (e) => {
+        if(e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') calculateMain();
+    });
+    
+    // 5. เชื่อมต่อปุ่มต่างๆ
+    Core.el('calculate-btn').onclick = calculateMain;
+    // ... (Manual Item Add Logic) ...
+}
+
+function calculateMain() {
+    // 1. ให้ Module ไฟฟ้า คำนวณปริมาณงาน
+    const qtys = Electrical.calculate(); 
+    
+    // 2. แปลงปริมาณงาน เป็น ราคา (Material + Labor)
+    const results = { material: 0, labor: 0, combined: [], purchaseOrder: {} };
+    
+    // ... (Logic เดิมในการ Loop taskQuantities แล้วคูณราคาจาก priceList) ...
+    // ... (Logic นี้เหมือนเดิม เพียงแต่เรียกใช้ Core.el, Core.val แทน document.getElementById) ...
+
+    // 3. คำนวณยอดสุทธิ (ใช้ Core Helper)
+    const final = Core.calculateFinalPrice(results.material, results.labor);
+    
+    // 4. แสดงผล
+    Core.el('total-display').textContent = `฿${Core.formatCurrency(final.grandTotal)}`;
+}
+
+// Start
+initApp();
+</script>
+</body>
+</html>

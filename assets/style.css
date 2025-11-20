@@ -1,4 +1,4 @@
-﻿/* assets/style.css */
+/* assets/style.css */
 
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap');
 
@@ -41,11 +41,13 @@ body {
     border-radius: 0.5rem;
     border-color: #cbd5e1;
     transition: all 0.2s ease-in-out;
+    padding: 0.5rem; /* Added padding for better look */
 }
 .form-input:focus {
     --tw-ring-color: rgba(59, 130, 246, 0.4);
     box-shadow: 0 0 0 3px var(--tw-ring-color);
     border-color: #3b82f6;
+    outline: none;
 }
 
 /* Buttons */

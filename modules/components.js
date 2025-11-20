@@ -1,5 +1,5 @@
 // modules/components.js
-// เก็บ HTML Template ของแต่ละส่วน (แก้ไขเครื่องหมาย Backtick ให้ถูกต้อง)
+// เวอร์ชันสมบูรณ์: แก้ไข Backtick และเพิ่ม renderJobCostingSection ครบถ้วน
 
 export const renderProjectInfoCard = () => `
     <div class="config-card mb-6">

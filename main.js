@@ -1,5 +1,5 @@
 // main.js
-// เวอร์ชัน V2.2 (Fixed): เลือกเบรกเกอร์เอง + ข้อมูลมาตรฐานครบถ้วน
+// เวอร์ชัน V2.3 (Fixed): แสดงราคาเบรกเกอร์และข้อมูลมาตรฐาน
 
 import { provinces, provinceZones } from './data/provinces.js';
 import { mainCableSpecs } from './data/electrical_data.js';
@@ -16,7 +16,7 @@ let activeTab = 'boq-combined';
 document.addEventListener('DOMContentLoaded', initApp);
 
 function initApp() {
-    console.log("App Starting (V2.2 Fixed)...");
+    console.log("App Starting (V2.3 Fixed)...");
     
     try {
         renderAppUI();
@@ -72,9 +72,13 @@ function setupEventListeners() {
         
         if(e.target.id === 'toggle_ev_charger_visibility') handleEVToggle(e.target);
         
-        // เมื่อเปลี่ยนขนาด BTU/Watt -> อัปเดตคำแนะนำเบรกเกอร์
+        // เมื่อเปลี่ยนขนาด BTU/Watt หรือเปลี่ยนเบรกเกอร์ -> อัปเดตคำแนะนำ
         if(e.target.classList.contains('dedicated-unit-size')) {
             updateBreakerSuggestion(e.target);
+        }
+        if(e.target.id.includes('breaker_select')) {
+             // ถ้าเปลี่ยนเบรกเกอร์เอง ก็คำนวณราคาใหม่
+             updateRealtimeTotal();
         }
         
         if(e.target.matches('input, select')) updateRealtimeTotal();
@@ -154,7 +158,7 @@ function updateMainCableSuggestion() {
     displayEl.textContent = suggestionText;
 }
 
-// --- Logic ใหม่: คำแนะนำเบรกเกอร์พร้อมราคา ---
+// --- Logic ใหม่: คำแนะนำเบรกเกอร์พร้อมแสดงราคาจริง ---
 function updateBreakerSuggestion(selectElement) {
     const infoId = selectElement.dataset.targetInfo;
     const type = selectElement.dataset.type; // 'ac' or 'wh'
@@ -166,35 +170,35 @@ function updateBreakerSuggestion(selectElement) {
     let recommendedAmp = 0;
     let note = "";
 
-    // Logic การเลือกขนาดเบรกเกอร์
+    // Logic การเลือกขนาดเบรกเกอร์ตาม BTU/Watt
     if (type === 'ac') {
-        if (val <= 12000) { recommendedAmp = 16; note = "แอร์ขนาดเล็ก"; } // 16A or 20A
-        else if (val <= 18000) { recommendedAmp = 20; note = "ขนาดมาตรฐาน"; }
-        else if (val <= 24000) { recommendedAmp = 20; note = "เริ่มใหญ่"; }
-        else { recommendedAmp = 32; note = "แอร์ขนาดใหญ่"; }
+        if (val <= 12000) { recommendedAmp = 20; note = "แอร์ขนาดเล็ก (9000-12000 BTU)"; } 
+        else if (val <= 18000) { recommendedAmp = 20; note = "ขนาดมาตรฐาน (12000-18000 BTU)"; }
+        else if (val <= 24000) { recommendedAmp = 32; note = "ขนาดใหญ่ (18000-24000 BTU)"; }
+        else { recommendedAmp = 32; note = "แอร์ขนาดใหญ่ (>24000 BTU)"; }
     } else { // wh (Water Heater)
-        if (val <= 3500) { recommendedAmp = 20; note = "น้ำอุ่นทั่วไป"; }
-        else if (val <= 4500) { recommendedAmp = 20; note = "น้ำอุ่น 4.5kW"; } // บางที่แนะนำ 25A แต่ใช้ 20A/32A ที่มีขายทั่วไป
-        else { recommendedAmp = 32; note = "น้ำร้อน/น้ำอุ่นแรงสูง"; }
+        if (val <= 3500) { recommendedAmp = 20; note = "น้ำอุ่นทั่วไป (3500W)"; }
+        else if (val <= 4500) { recommendedAmp = 32; note = "น้ำอุ่นกำลังสูง (4500W)"; } // ปรับเป็น 32A เพื่อความปลอดภัย
+        else { recommendedAmp = 32; note = "น้ำร้อน/หม้อต้ม (>4500W)"; }
     }
 
-    // หาราคาจาก Price List
-    // (ใช้โค้ด 10.x ที่ map ไว้: 10.1=16A, 10.2=20A, 10.3=32A)
+    // ดึงราคาจาก Price List (ต้นน้ำถึงปลายน้ำ)
     const prices = getPriceList();
     let price = 0;
     let matCode = "";
     
-    if (recommendedAmp <= 16) { matCode = "M-CB-1P-16A"; price = prices['M-CB-1P-16A']; }
-    else if (recommendedAmp <= 20) { matCode = "M-CB-1P-20A"; price = prices['M-CB-1P-20A']; }
-    else { matCode = "M-CB-1P-32A"; price = prices['M-CB-1P-32A']; }
+    if (recommendedAmp <= 16) { matCode = "M-CB-1P-16A"; price = prices['M-CB-1P-16A'] || 0; }
+    else if (recommendedAmp <= 20) { matCode = "M-CB-1P-20A"; price = prices['M-CB-1P-20A'] || 0; }
+    else { matCode = "M-CB-1P-32A"; price = prices['M-CB-1P-32A'] || 0; }
 
-    // อัปเดตข้อความแนะนำ
-    infoEl.innerHTML = `
-        <div>
-            <strong>มาตรฐานแนะนำ: ${recommendedAmp} Amp</strong><br>
-            <span class="text-gray-500 font-normal">สำหรับ${note} (ราคาตลาด ~${price} บ.)</span>
-        </div>
-    `;
+    // อัปเดตข้อความแนะนำในกล่องเขียว
+    const detailEl = infoEl.querySelector('div:last-child');
+    if (detailEl) {
+        detailEl.innerHTML = `
+            มาตรฐานแนะนำ: <strong>${recommendedAmp} Amp</strong> (${note})<br>
+            <span class="text-emerald-700">ราคาเบรกเกอร์: <strong>${price.toLocaleString()} บาท/ตัว</strong> (รหัส: ${matCode})</span>
+        `;
+    }
     
     // เก็บค่าแนะนำไว้ที่ info element เพื่อให้ buildQuantities อ่านได้ถ้าเลือก Auto
     infoEl.dataset.autoAmp = recommendedAmp;
@@ -303,7 +307,7 @@ function buildQuantitiesFromDOM() {
         }
     }
 
-    // 5. AC/Heater (อัปเดต Logic: อ่านค่า Breaker จาก Dropdown)
+    // 5. AC/Heater (Logic: ใช้ค่าจาก Dropdown หรือ Auto)
     ['ac_wiring', 'heater_wiring'].forEach(prefix => {
         const count = getInt(`${prefix}_units`);
         const installType = document.getElementById(prefix==='ac_wiring'?'ac_install_type_4':'wh_install_type_5')?.value;
@@ -323,21 +327,20 @@ function buildQuantitiesFromDOM() {
                 }
                 addQty('12.1', 1); // กล่องเบรกเกอร์
 
-                // อ่านค่า Breaker ที่เลือก
+                // อ่านค่า Breaker
                 const breakerSelect = document.getElementById(`${prefix}_${i}_breaker_select`);
                 const infoDiv = document.getElementById(`${prefix}_${i}_breaker_info`);
                 let amps = 0;
 
                 if (breakerSelect) {
                     if (breakerSelect.value === 'auto' && infoDiv) {
-                        // ถ้าเลือก Auto ให้เอาค่าที่แนะนำไว้
                         amps = parseInt(infoDiv.dataset.autoAmp || 0);
                     } else {
-                        // ถ้าเลือก Manual ให้เอาค่าจาก Dropdown
                         amps = parseInt(breakerSelect.value || 0);
                     }
                 }
 
+                // เพิ่มเบรกเกอร์ตามขนาดที่ได้
                 if(amps > 0) {
                     if(amps <= 16) addQty('10.1', 1);
                     else if(amps <= 20) addQty('10.2', 1);

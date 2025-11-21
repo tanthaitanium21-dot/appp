@@ -1,5 +1,5 @@
 // modules/components.js
-// เวอร์ชันแก้ไข: กลับไปใช้มาตรฐานสายเมนแบบ Auto + รองรับ Input ละเอียด
+// HTML Components for Main Cards
 
 export const renderProjectInfoCard = () => `
     <div class="config-card mb-6">
@@ -16,7 +16,7 @@ export const renderWorkDetails = () => `
     <div class="space-y-6">
         <h2 class="text-2xl font-bold text-blue-600 border-b-2 border-slate-200 pb-2">1. ระบุรายละเอียดงาน</h2>
 
-        <!-- Card 1: Main Electrical (กลับสู่มาตรฐาน Auto Spec) -->
+        <!-- Card 1: Main Electrical -->
         <div class="config-card collapsible-card">
             <h3 class="text-xl font-bold mb-4 text-slate-700 flex items-center gap-3"><span>งานเดินสายเมนไฟฟ้าภายนอก</span></h3>
             <div class="space-y-4">
@@ -26,6 +26,7 @@ export const renderWorkDetails = () => `
                         <div><label class="block text-sm font-medium text-slate-600">ความสูงเสา</label><select class="form-input mt-1 block w-full" id="pole_height_7"><option value="0">-- ไม่ปักเสา --</option><option value="6.0">6.0 เมตร</option><option value="7.0">7.0 เมตร</option><option value="8.0">8.0 เมตร</option><option value="9.0">9.0 เมตร</option></select></div>
                         <div><label class="block text-sm font-medium text-slate-600">จำนวนเสาที่ปัก (ต้น)</label><input class="form-input mt-1 block w-full" id="pole_count_7" min="0" placeholder="0" type="number"/></div>
                         <div><label class="block text-sm font-medium text-slate-600">ติดตั้งแร็ค 2 ชุด (ต้น)</label><input class="form-input mt-1 block w-full" id="rack_2_sets_7" min="0" placeholder="0" type="number"/></div>
+                        <div><label class="block text-sm font-medium text-slate-600">ติดตั้งแร็ค 1 ชุด (ต้น)</label><input class="form-input mt-1 block w-full" id="rack_1_set_7" min="0" placeholder="0" type="number"/></div>
                         <div><label class="block text-sm font-medium text-slate-600">ติดตั้งแร็ค 4 ชุด (ต้น)</label><input class="form-input mt-1 block w-full" id="rack_4_sets_7" min="0" placeholder="0" type="number"/></div>
                     </div>
                 </div>
@@ -34,13 +35,25 @@ export const renderWorkDetails = () => `
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div><label class="block text-sm font-medium text-slate-600">เขตการไฟฟ้า</label><select class="form-input mt-1 block w-full bg-slate-100" id="main_authority_7"><option value="MEA">กฟน. (นครหลวง)</option><option value="PEA">กฟภ. (ภูมิภาค)</option></select></div>
                         <div><label class="block text-sm font-medium text-slate-600">ขนาดมิเตอร์</label><select class="form-input mt-1 block w-full" id="meter_size_3"><option value="5(15)">5(15)A</option><option selected="" value="15(45)">15(45)A</option><option value="30(100)">30(100)A</option><option value="50(150)">50(150)A (1 เฟส)</option></select></div>
+                        
                         <div><label class="block text-sm font-medium text-slate-600">ชนิดสายเมน</label><select class="form-input mt-1 block w-full" id="main_ext_type_7"><option value="THW">ทองแดง (THW)</option><option value="THW-A">อะลูมิเนียม (THW-A)</option></select></div>
+                        <div>
+                             <label class="block text-sm font-medium text-slate-600">เลือกขนาดสายเอง (Optional)</label>
+                             <select class="form-input mt-1 block w-full text-sm text-gray-500" id="main_cable_size_7">
+                                <option value="">-- อัตโนมัติ (แนะนำ) --</option>
+                                <option value="10">10 sq.mm</option>
+                                <option value="16">16 sq.mm</option>
+                                <option value="25">25 sq.mm</option>
+                                <option value="35">35 sq.mm</option>
+                                <option value="50">50 sq.mm</option>
+                            </select>
+                        </div>
+
                         <div class="md:col-span-2"><label class="block text-sm font-medium text-slate-600">ระยะทางสายเมน (เมตร)</label><input class="form-input mt-1 block w-full" id="main_ext_dist_7" min="0" placeholder="0" type="number"/></div>
                         
-                        <!-- กลับมาใช้ Display Box -->
-                        <div class="md:col-span-2 mt-3">
+                        <div class="md:col-span-2 mt-2">
                             <label class="block text-sm font-medium text-slate-600">ขนาดสายเมนที่แนะนำตามมาตรฐาน</label>
-                            <p id="main_cable_spec_display" class="mt-1 p-3 bg-blue-100 text-blue-800 rounded-md font-mono h-[46px] flex items-center justify-center text-lg">N/A</p>
+                            <p class="mt-1 p-3 bg-slate-100 text-slate-500 rounded-md font-mono text-center" id="main_cable_spec_display">Loading...</p>
                         </div>
                     </div>
                 </div>
@@ -88,7 +101,7 @@ export const renderWorkDetails = () => `
             <div class="mt-4 space-y-4" id="light_circuits_container"></div>
         </div>
 
-        <!-- Card 5: Dedicated Wiring (สำหรับแอร์และน้ำอุ่น) -->
+        <!-- Card 5: Dedicated Wiring -->
         <div class="config-card collapsible-card">
             <h3 class="text-xl font-bold mb-4 text-slate-700 flex items-center gap-3"><span>งานเดินสายไฟเฉพาะจุด (แอร์/น้ำอุ่น)</span></h3>
             <div class="space-y-4 pt-4 border-t">
@@ -132,7 +145,6 @@ const renderRestOfCards = () => `
         <div class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 mt-2">
                 <div><label class="block text-sm font-medium text-slate-600">เครื่องทำน้ำอุ่น (เครื่อง)</label><input class="form-input mt-1 block w-full" id="heater_units" min="0" placeholder="0" type="number"/></div>
-                <div class="flex items-center mt-1"><input class="h-4 w-4 rounded border-gray-300 text-blue-600" id="heater_exclude_hoses" type="checkbox"/><label class="ml-2 block text-sm font-medium text-slate-700">ไม่รวมสายน้ำดี</label></div>
                 <div><label class="block text-sm font-medium text-slate-600">เครื่องปรับอากาศ (เครื่อง)</label><input class="form-input mt-1 block w-full" id="ac_units" min="0" placeholder="0" type="number"/></div>
                 <div><label class="block text-sm font-medium text-slate-600">ปั๊มน้ำ (เครื่อง)</label><input class="form-input mt-1 block w-full" id="pump_units" min="0" placeholder="0" type="number"/></div>
                 <div><label class="block text-sm font-medium text-slate-600">รูปแบบติดตั้งปั๊มน้ำ</label><select class="form-input mt-1 block w-full" id="wp_install_type_6"><option value="pvc_clip">เดินท่อ PVC ขาว ตีกิ๊บ (THW)</option><option value="vct_clip">เดินสาย VCT ตีกิ๊บ</option><option value="nyy_burial">เดินร้อยท่อฝังดิน (สาย NYY)</option></select></div>
@@ -222,4 +234,23 @@ export const renderJobCostingSection = () => `
     <div class="no-print p-4 border border-blue-200 rounded-lg bg-blue-50 mb-6" id="manual-item-adder-section">
         <h3 class="text-lg font-semibold text-blue-800 mb-3">เพิ่มงานเอง (Job Costing)</h3>
         <div class="space-y-4">
-            <div class="grid grid-cols
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-2"><label class="block text-sm font-medium text-slate-700">ชื่องาน</label><input class="form-input mt-1 block w-full" id="manual-job-name" placeholder="เช่น ค่าซ่อมฝ้า" type="text"/></div>
+                <div><label class="block text-sm font-medium text-slate-700">ค่าแรงรวม (บาท)</label><input class="form-input mt-1 block w-full" id="manual-job-labor-total" placeholder="0" type="number"/></div>
+                <div><label class="block text-sm font-medium text-slate-700">จำนวนงาน</label><input class="form-input mt-1 block w-full" id="manual-job-qty" placeholder="1" type="number" value="1"/></div>
+                <div><label class="block text-sm font-medium text-slate-700">หน่วยงาน</label><input class="form-input mt-1 block w-full" id="manual-job-unit" placeholder="งาน" type="text" value="งาน"/></div>
+            </div>
+            <div class="border-t pt-3">
+                <h4 class="text-md font-semibold text-slate-700">ลิสต์วัสดุสำหรับใบสั่งซื้อ</h4>
+                <table class="w-full mt-2" id="manual-job-materials-table">
+                    <thead><tr><th>รายการวัสดุ</th><th class="w-20">จำนวน</th><th class="w-24">หน่วย</th><th class="w-28">ราคา/หน่วย</th><th class="w-10"></th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <button class="btn text-sm py-1 px-3 mt-2 bg-white border border-blue-500 text-blue-500 hover:bg-blue-50" id="manual-job-add-material-row">+ เพิ่มแถววัสดุ</button>
+            </div>
+            <div class="text-right border-t pt-4">
+                <button class="btn btn-primary py-2 px-4" id="manual-job-add-btn">+ เพิ่มงานนี้เข้าระบบ</button>
+            </div>
+        </div>
+    </div>
+`;

@@ -94,7 +94,7 @@ export function renderDynamicInputs(prefix, index, points) {
     container.classList.add('pl-4', 'border-l-4', 'border-blue-100', 'py-2');
 }
 
-// แก้ไข: เพิ่มช่องเลือกเบรกเกอร์ และพื้นที่แสดงข้อมูลแนะนำ
+// แก้ไข: เพิ่มช่องเลือกเบรกเกอร์ และพื้นที่แสดงข้อมูลแนะนำพร้อมราคา
 export function renderDedicatedCircuitInputs(prefix, count, container) {
     container.innerHTML = '';
     if (count <= 0) return;
@@ -132,9 +132,9 @@ export function renderDedicatedCircuitInputs(prefix, count, container) {
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-slate-600 mb-1">ขนาดเบรกเกอร์</label>
-                            <select id="${prefix}_${i}_breaker_select" class="form-input w-full text-sm font-bold text-blue-700">
-                                <option value="auto">Auto (ตามมาตรฐาน)</option>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">เลือกขนาดเบรกเกอร์</label>
+                            <select id="${prefix}_${i}_breaker_select" class="form-input w-full text-sm font-bold text-blue-700 cursor-pointer hover:bg-blue-50 transition-colors">
+                                <option value="auto">⚡ Auto (แนะนำตามมาตรฐาน)</option>
                                 <option value="16">16 Amp</option>
                                 <option value="20">20 Amp</option>
                                 <option value="32">32 Amp</option>
@@ -142,14 +142,19 @@ export function renderDedicatedCircuitInputs(prefix, count, container) {
                         </div>
                     </div>
 
-                    <!-- พื้นที่แสดงข้อมูลแนะนำ -->
-                    <div id="${prefix}_${i}_breaker_info" class="bg-green-50 border border-green-100 rounded p-2 text-xs text-green-800 flex items-start gap-2">
-                        <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <span>กำลังโหลดข้อมูล...</span>
+                    <!-- พื้นที่แสดงข้อมูลแนะนำและราคา -->
+                    <div id="${prefix}_${i}_breaker_info" class="bg-green-50 border border-green-200 rounded-md p-3 text-sm flex flex-col gap-1 shadow-sm">
+                        <div class="flex items-center text-green-800 font-semibold">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>คำแนะนำมาตรฐาน</span>
+                        </div>
+                        <div class="text-slate-600 pl-6 text-xs" id="${prefix}_${i}_info_detail">
+                            กำลังโหลดข้อมูลราคา...
+                        </div>
                     </div>
                     
                     <!-- ระยะทาง -->
-                    <div class="grid grid-cols-2 gap-3 bg-white p-3 rounded border border-slate-200">
+                    <div class="grid grid-cols-2 gap-3 bg-white p-3 rounded border border-slate-200 mt-2">
                         <div>
                             <label class="text-[10px] text-slate-500">ระยะ ตู้ไฟ→เบรกเกอร์ (ม.)</label>
                             <input type="number" id="${prefix}_${i}_panel_to_breaker_dist" class="form-input w-full text-sm" placeholder="0">

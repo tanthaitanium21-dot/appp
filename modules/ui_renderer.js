@@ -1,5 +1,5 @@
 // modules/ui_renderer.js
-// เวอร์ชัน V1 Restore: กู้คืนช่องกรอกละเอียดสำหรับแอร์/น้ำอุ่น
+// แก้ไข: กู้คืน UI กรอกระยะละเอียดสำหรับ แอร์ และ เครื่องทำน้ำอุ่น (Logic V1)
 
 export function renderCircuitInputs(prefix, count, container) {
     container.innerHTML = '';
@@ -48,21 +48,23 @@ export function renderDynamicInputs(prefix, index, points) {
     container.innerHTML = html;
 }
 
-// --- ส่วนที่กู้คืน V1: ช่องกรอกละเอียดสำหรับ แอร์/น้ำอุ่น ---
+// --- ส่วนสำคัญ: Input แบบละเอียดสำหรับ แอร์ และ เครื่องทำน้ำอุ่น (เหมือน V1) ---
 export function renderDedicatedCircuitInputs(prefix, count, container) {
     container.innerHTML = '';
     if (count <= 0) return;
     
     const isAc = prefix === 'ac_wiring';
     const unitSelectorLabel = isAc ? 'ขนาด BTU' : 'ขนาด Watt';
+    
+    // ตัวเลือกสำหรับเครื่องทำน้ำอุ่น (Watt) และแอร์ (BTU)
     const unitOptions = isAc 
         ? `<option value="12000">9,000 - 12,000 BTU</option>
            <option value="18000">12,001 - 18,000 BTU</option>
            <option value="24000">18,001 - 24,000 BTU</option>
            <option value="30000">&gt; 24,000 BTU</option>`
-        : `<option value="3500">&lt; 3,500 W</option>
-           <option value="4500">3,501 - 4,500 W</option>
-           <option value="6000">4,501 - 6,000 W</option>`;
+        : `<option value="3500">3,500 Watt (ปกติ)</option>
+           <option value="4500">4,500 Watt (น้ำอุ่น)</option>
+           <option value="6000">6,000 Watt (น้ำร้อน/หม้อต้ม)</option>`;
 
     let html = '';
     for (let i = 1; i <= count; i++) {
@@ -82,7 +84,7 @@ export function renderDedicatedCircuitInputs(prefix, count, container) {
                         </select>
                     </div>
                     
-                    <!-- แถว 2: ระยะทางละเอียด (เหมือน V1) -->
+                    <!-- แถว 2: ระยะทางละเอียด (Restore V1 Logic) -->
                     <div class="grid grid-cols-2 gap-3 bg-white p-2 rounded border border-slate-100">
                         <div>
                             <label class="text-[10px] text-slate-500">ระยะ ตู้ไฟ→เบรกเกอร์ (ม.)</label>

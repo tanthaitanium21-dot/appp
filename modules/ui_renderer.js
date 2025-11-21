@@ -157,7 +157,7 @@ export function formatCurrency(num) {
     return num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// ฟังก์ชันที่ขาดไป กู้คืนให้แล้วครับ
+// นี่คือฟังก์ชันที่ขาดไป (เพิ่มกลับมาให้แล้วครับ)
 export function createSummaryTable(summaryItems) {
     if (!summaryItems || summaryItems.length === 0) return '';
     

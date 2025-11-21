@@ -1,5 +1,5 @@
 // modules/components.js
-// HTML Components for Main Cards
+// UI Components (Fixed: Explicit Cable Selection)
 
 export const renderProjectInfoCard = () => `
     <div class="config-card mb-6">
@@ -16,7 +16,7 @@ export const renderWorkDetails = () => `
     <div class="space-y-6">
         <h2 class="text-2xl font-bold text-blue-600 border-b-2 border-slate-200 pb-2">1. ระบุรายละเอียดงาน</h2>
 
-        <!-- Card 1: Main Electrical -->
+        <!-- Card 1: Main Electrical (User Chooses Size) -->
         <div class="config-card collapsible-card">
             <h3 class="text-xl font-bold mb-4 text-slate-700 flex items-center gap-3"><span>งานเดินสายเมนไฟฟ้าภายนอก</span></h3>
             <div class="space-y-4">
@@ -34,27 +34,23 @@ export const renderWorkDetails = () => `
                     <h4 class="font-semibold text-blue-800">ส่วนสายเมนภายนอก (เดินลอย)</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div><label class="block text-sm font-medium text-slate-600">เขตการไฟฟ้า</label><select class="form-input mt-1 block w-full bg-slate-100" id="main_authority_7"><option value="MEA">กฟน. (นครหลวง)</option><option value="PEA">กฟภ. (ภูมิภาค)</option></select></div>
-                        <div><label class="block text-sm font-medium text-slate-600">ขนาดมิเตอร์</label><select class="form-input mt-1 block w-full" id="meter_size_3"><option value="5(15)">5(15)A</option><option selected="" value="15(45)">15(45)A</option><option value="30(100)">30(100)A</option><option value="50(150)">50(150)A (1 เฟส)</option></select></div>
+                        <div><label class="block text-sm font-medium text-slate-600">ขนาดมิเตอร์ (สำหรับอ้างอิง)</label><select class="form-input mt-1 block w-full" id="meter_size_3"><option value="5(15)">5(15)A</option><option selected="" value="15(45)">15(45)A</option><option value="30(100)">30(100)A</option><option value="50(150)">50(150)A (1 เฟส)</option></select></div>
                         
+                        <!-- User Selects Cable Here -->
                         <div><label class="block text-sm font-medium text-slate-600">ชนิดสายเมน</label><select class="form-input mt-1 block w-full" id="main_ext_type_7"><option value="THW">ทองแดง (THW)</option><option value="THW-A">อะลูมิเนียม (THW-A)</option></select></div>
                         <div>
-                             <label class="block text-sm font-medium text-slate-600">เลือกขนาดสายเอง (Optional)</label>
-                             <select class="form-input mt-1 block w-full text-sm text-gray-500" id="main_cable_size_7">
-                                <option value="">-- อัตโนมัติ (แนะนำ) --</option>
+                             <label class="block text-sm font-medium text-slate-600">ขนาดสายเมน (ตร.มม.) <span class="text-red-500">*ต้องเลือก</span></label>
+                             <select class="form-input mt-1 block w-full font-bold text-blue-900" id="main_cable_size_7">
                                 <option value="10">10 sq.mm</option>
-                                <option value="16">16 sq.mm</option>
+                                <option value="16" selected>16 sq.mm</option>
                                 <option value="25">25 sq.mm</option>
                                 <option value="35">35 sq.mm</option>
                                 <option value="50">50 sq.mm</option>
                             </select>
+                            <p class="text-xs text-gray-500 mt-1" id="main_cable_spec_display"></p> <!-- คำแนะนำจะขึ้นตรงนี้ -->
                         </div>
 
                         <div class="md:col-span-2"><label class="block text-sm font-medium text-slate-600">ระยะทางสายเมน (เมตร)</label><input class="form-input mt-1 block w-full" id="main_ext_dist_7" min="0" placeholder="0" type="number"/></div>
-                        
-                        <div class="md:col-span-2 mt-2">
-                            <label class="block text-sm font-medium text-slate-600">ขนาดสายเมนที่แนะนำตามมาตรฐาน</label>
-                            <p class="mt-1 p-3 bg-slate-100 text-slate-500 rounded-md font-mono text-center" id="main_cable_spec_display">Loading...</p>
-                        </div>
                     </div>
                 </div>
             </div>

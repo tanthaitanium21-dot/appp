@@ -1,5 +1,5 @@
 // modules/ui_renderer.js
-// UI Helpers: สร้างช่องกรอกข้อมูลแบบ Dynamic
+// UI Helpers: สร้างช่องกรอกข้อมูลแบบ Dynamic และ Format ตัวเลข
 
 export function renderCircuitInputs(prefix, count, container) {
     container.innerHTML = '';
@@ -155,4 +155,28 @@ export function renderDedicatedCircuitInputs(prefix, count, container) {
 export function formatCurrency(num) {
     if (num === undefined || num === null || isNaN(num)) return "0.00";
     return num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ฟังก์ชันที่ขาดไป กู้คืนให้แล้วครับ
+export function createSummaryTable(summaryItems) {
+    if (!summaryItems || summaryItems.length === 0) return '';
+    
+    let rows = summaryItems.map(item => `
+        <tr class="${item.isTotal ? 'bg-blue-50 border-t-2 border-blue-200' : 'border-b border-gray-100'}">
+            <td class="px-6 py-2 text-right font-semibold text-slate-700 ${item.isTotal ? 'text-base py-3' : 'text-sm'}">
+                ${item.label}
+            </td>
+            <td class="px-6 py-2 text-right font-bold w-1/3 ${item.isTotal ? 'text-xl text-blue-700 py-3' : 'text-gray-800'}">
+                ${formatCurrency(item.value)}
+            </td>
+        </tr>
+    `).join('');
+
+    return `
+        <div class="mt-8 flex justify-end">
+            <table class="w-full md:w-2/3 lg:w-1/2 bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                ${rows}
+            </table>
+        </div>
+    `;
 }

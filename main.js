@@ -1,5 +1,5 @@
 // main.js
-// เวอร์ชัน V2.1 (Fixed): แก้ไฟล์ไม่จบ + ปลดล็อคขนาดสายเมนให้ User เลือกเอง 100%
+// เวอร์ชัน V2.2 (Fixed): เลือกเบรกเกอร์เอง + ข้อมูลมาตรฐานครบถ้วน
 
 import { provinces, provinceZones } from './data/provinces.js';
 import { mainCableSpecs } from './data/electrical_data.js';
@@ -16,20 +16,17 @@ let activeTab = 'boq-combined';
 document.addEventListener('DOMContentLoaded', initApp);
 
 function initApp() {
-    console.log("App Starting (V2.1 Fixed)...");
+    console.log("App Starting (V2.2 Fixed)...");
     
     try {
-        // 1. Render UI Structure
         renderAppUI();
-        
-        // 2. Setup Data & Listeners
         setupStaticData();
         setupEventListeners();
         populatePriceEditor();
         
-        // 3. Initial Calculation
+        // Initial Calculation
         handleProvinceChange(); 
-        updateMainCableSuggestion(); // แค่แนะนำ ไม่บังคับเปลี่ยน
+        updateMainCableSuggestion(); 
         updateRealtimeTotal();
         
         console.log("App Initialized Successfully");
@@ -66,24 +63,23 @@ function setupStaticData() {
 }
 
 function setupEventListeners() {
-    // Change Listeners
     document.body.addEventListener('change', (e) => {
-        // Logic เฉพาะจุด
         if(e.target.id === 'province_selector') handleProvinceChange();
         
-        // ถ้าเปลี่ยนสเปคมิเตอร์ -> อัปเดตคำแนะนำ (แต่ไม่เปลี่ยนค่าที่ User เลือก)
         if(['main_authority_7', 'meter_size_3', 'main_ext_type_7'].includes(e.target.id)) {
             updateMainCableSuggestion();
         }
         
         if(e.target.id === 'toggle_ev_charger_visibility') handleEVToggle(e.target);
-        if(e.target.classList.contains('dedicated-unit-size')) updateBreakerLabel(e.target);
         
-        // คำนวณใหม่เมื่อมีการเปลี่ยนแปลงใดๆ
+        // เมื่อเปลี่ยนขนาด BTU/Watt -> อัปเดตคำแนะนำเบรกเกอร์
+        if(e.target.classList.contains('dedicated-unit-size')) {
+            updateBreakerSuggestion(e.target);
+        }
+        
         if(e.target.matches('input, select')) updateRealtimeTotal();
     });
 
-    // Input Listeners
     document.body.addEventListener('input', (e) => {
         if(e.target.matches('input[type="number"], input[type="text"]')) updateRealtimeTotal();
         if(e.target.classList.contains('point-count-input')) {
@@ -92,23 +88,20 @@ function setupEventListeners() {
         }
     });
     
-    // Dynamic Circuit Setup
     setupDynamicListener('socket_circuits', 'socket', 'socket_circuits_container');
     setupDynamicListener('light_circuits', 'light', 'light_circuits_container');
     setupDynamicListener('ac_wiring_units', 'ac_wiring', 'ac_wiring_circuits_container');
     setupDynamicListener('heater_wiring_units', 'heater_wiring', 'heater_wiring_circuits_container');
 
-    // Buttons
     const calcBtn = document.getElementById('calculate-btn');
     if(calcBtn) calcBtn.addEventListener('click', displayReport);
     
     setupExportButtons();
     setupManualJobListeners();
     setupTabListeners();
-    setupCollapsibleCards(); // เรียกใช้ฟังก์ชันพับเก็บ
+    setupCollapsibleCards();
 }
 
-// --- Logic: จัดการจังหวัด ---
 function handleProvinceChange() {
     const province = document.getElementById('province_selector').value;
     const bkkZoneContainer = document.getElementById('bkk_zone_container');
@@ -122,10 +115,9 @@ function handleProvinceChange() {
         const isMEA = provinceZones.MEA.includes(province);
         authEl.value = isMEA ? 'MEA' : 'PEA';
     }
-    updateMainCableSuggestion(); // อัปเดตคำแนะนำใหม่เมื่อเปลี่ยนเขต
+    updateMainCableSuggestion();
 }
 
-// --- Logic: สายเมน (User เลือกเอง + ระบบแนะนำ) ---
 function updateMainCableSuggestion() {
     const authority = document.getElementById('main_authority_7')?.value;
     const meterSize = document.getElementById('meter_size_3')?.value;
@@ -134,28 +126,26 @@ function updateMainCableSuggestion() {
     
     if(!authority || !meterSize || !cableType || !displayEl) return;
 
-    // Logic กฟน. ห้ามใช้ THW-A
     const thwAOption = document.getElementById('main_ext_type_7').querySelector('option[value="THW-A"]');
     if(authority === 'MEA') {
         if(thwAOption) thwAOption.disabled = true;
         if(cableType === 'THW-A') {
             document.getElementById('main_ext_type_7').value = 'THW';
-            return updateMainCableSuggestion(); // เรียกซ้ำ
+            return updateMainCableSuggestion();
         }
     } else {
         if(thwAOption) thwAOption.disabled = false;
     }
 
-    // หาค่ามาตรฐานมาแสดง (แต่ไม่บังคับเลือก)
     let suggestionText = "N/A";
     try {
         const size = mainCableSpecs[authority][meterSize][cableType];
         if (size) {
-            suggestionText = `แนะนำ: ${cableType} ${size} sq.mm.`;
-            displayEl.className = "mt-1 text-xs text-green-600 font-medium";
+            suggestionText = `แนะนำ: ${cableType} ${size} sq.mm. (มาตรฐานการไฟฟ้า)`;
+            displayEl.className = "text-xs text-green-600 mt-1 font-medium";
         } else {
             suggestionText = "ไม่พบข้อมูลมาตรฐาน";
-            displayEl.className = "mt-1 text-xs text-red-500 font-medium";
+            displayEl.className = "text-xs text-red-500 mt-1 font-medium";
         }
     } catch (e) {
         suggestionText = "-";
@@ -164,19 +154,50 @@ function updateMainCableSuggestion() {
     displayEl.textContent = suggestionText;
 }
 
-// --- Logic: Breaker ---
-function updateBreakerLabel(selectElement) {
-    const displayId = selectElement.dataset.displayId;
+// --- Logic ใหม่: คำแนะนำเบรกเกอร์พร้อมราคา ---
+function updateBreakerSuggestion(selectElement) {
+    const infoId = selectElement.dataset.targetInfo;
+    const type = selectElement.dataset.type; // 'ac' or 'wh'
     const val = parseInt(selectElement.value);
-    const displayEl = document.getElementById(displayId);
+    const infoEl = document.getElementById(infoId);
     
-    let text = '20A'; // Default
-    if (val > 4500 && val <= 24000) text = '32A'; // ค่าประมาณการ
-    if (val > 24000) text = '32A+';
+    if (!infoEl) return;
 
-    if(displayEl) {
-        displayEl.textContent = `CB: ${text}`;
+    let recommendedAmp = 0;
+    let note = "";
+
+    // Logic การเลือกขนาดเบรกเกอร์
+    if (type === 'ac') {
+        if (val <= 12000) { recommendedAmp = 16; note = "แอร์ขนาดเล็ก"; } // 16A or 20A
+        else if (val <= 18000) { recommendedAmp = 20; note = "ขนาดมาตรฐาน"; }
+        else if (val <= 24000) { recommendedAmp = 20; note = "เริ่มใหญ่"; }
+        else { recommendedAmp = 32; note = "แอร์ขนาดใหญ่"; }
+    } else { // wh (Water Heater)
+        if (val <= 3500) { recommendedAmp = 20; note = "น้ำอุ่นทั่วไป"; }
+        else if (val <= 4500) { recommendedAmp = 20; note = "น้ำอุ่น 4.5kW"; } // บางที่แนะนำ 25A แต่ใช้ 20A/32A ที่มีขายทั่วไป
+        else { recommendedAmp = 32; note = "น้ำร้อน/น้ำอุ่นแรงสูง"; }
     }
+
+    // หาราคาจาก Price List
+    // (ใช้โค้ด 10.x ที่ map ไว้: 10.1=16A, 10.2=20A, 10.3=32A)
+    const prices = getPriceList();
+    let price = 0;
+    let matCode = "";
+    
+    if (recommendedAmp <= 16) { matCode = "M-CB-1P-16A"; price = prices['M-CB-1P-16A']; }
+    else if (recommendedAmp <= 20) { matCode = "M-CB-1P-20A"; price = prices['M-CB-1P-20A']; }
+    else { matCode = "M-CB-1P-32A"; price = prices['M-CB-1P-32A']; }
+
+    // อัปเดตข้อความแนะนำ
+    infoEl.innerHTML = `
+        <div>
+            <strong>มาตรฐานแนะนำ: ${recommendedAmp} Amp</strong><br>
+            <span class="text-gray-500 font-normal">สำหรับ${note} (ราคาตลาด ~${price} บ.)</span>
+        </div>
+    `;
+    
+    // เก็บค่าแนะนำไว้ที่ info element เพื่อให้ buildQuantities อ่านได้ถ้าเลือก Auto
+    infoEl.dataset.autoAmp = recommendedAmp;
 }
 
 function setupDynamicListener(id, type, containerId) {
@@ -187,8 +208,9 @@ function setupDynamicListener(id, type, containerId) {
             renderCircuitInputs(type, count, document.getElementById(containerId));
         } else {
             renderDedicatedCircuitInputs(type, count, document.getElementById(containerId));
+            // Trigger update suggestion for new items immediately
             setTimeout(() => {
-                document.querySelectorAll(`#${containerId} .dedicated-unit-size`).forEach(sel => updateBreakerLabel(sel));
+                document.querySelectorAll(`#${containerId} .dedicated-unit-size`).forEach(sel => updateBreakerSuggestion(sel));
             }, 0);
         }
     });
@@ -199,7 +221,6 @@ function handleEVToggle(checkbox) {
     if(wrapper) wrapper.classList.toggle('hidden', !checkbox.checked);
 }
 
-// --- Core: รวบรวมปริมาณงาน (Build Quantities) ---
 function buildQuantitiesFromDOM() {
     const quantities = new Map();
     const addQty = (id, val) => { 
@@ -209,7 +230,7 @@ function buildQuantitiesFromDOM() {
     const getVal = (id) => parseFloat(document.getElementById(id)?.value) || 0;
     const getInt = (id) => parseInt(document.getElementById(id)?.value) || 0;
 
-    // 1. เสาและเมน
+    // 1. Pole & Main
     const ph = document.getElementById('pole_height_7')?.value;
     const pc = getInt('pole_count_7');
     if (pc > 0 && ph !== '0') {
@@ -221,19 +242,16 @@ function buildQuantitiesFromDOM() {
     addQty('17.4-2', getInt('rack_2_sets_7'));
     addQty('17.4-4', getInt('rack_4_sets_7'));
     addQty('17.4-1', getInt('rack_1_set_7'));
-    
-    // สายเมน: ส่งระยะทางไป calculator.js เพื่อคูณกับ "ขนาดที่ User เลือก"
     if (getVal('main_ext_dist_7') > 0) addQty('17.5', getVal('main_ext_dist_7'));
 
-    // 2. CU & Ground
+    // 2. CU
     const cu = document.getElementById('cu_replacement')?.value;
     if(cu !== 'none') {
         const map = {'4_slot':'9.1', '6_slot':'9.2', '8_slot':'9.3', '10_slot':'9.4', '12_slot':'9.5'};
         if(map[cu]) addQty(map[cu], 1);
     }
     if(document.getElementById('install_ground')?.checked) {
-        addQty('6.1', 1);
-        addQty('1.5', getVal('ground_distance'));
+        addQty('6.1', 1); addQty('1.5', getVal('ground_distance'));
     }
     addQty('10.1', getInt('mcb_16a')); 
     addQty('10.2', getInt('mcb_20a')); 
@@ -244,9 +262,7 @@ function buildQuantitiesFromDOM() {
     const st = document.getElementById('socket_type')?.value;
     for(let i=1; i<=sc; i++) {
         let dist = getVal(`socket_circuit_${i}_panel_dist`);
-        document.querySelectorAll(`input.extra-dist-input[data-circuit="socket-${i}"]`).forEach(inp => {
-            dist += (parseFloat(inp.value)||0)/100; 
-        });
+        document.querySelectorAll(`input.extra-dist-input[data-circuit="socket-${i}"]`).forEach(inp => dist += (parseFloat(inp.value)||0)/100);
         const pts = getInt(`socket_circuit_${i}_points`);
         if(pts > 0) {
             if(st==='surface_vaf') { addQty('1.3', dist); addQty('3.1', pts); } 
@@ -287,13 +303,14 @@ function buildQuantitiesFromDOM() {
         }
     }
 
-    // 5. AC/Heater
+    // 5. AC/Heater (อัปเดต Logic: อ่านค่า Breaker จาก Dropdown)
     ['ac_wiring', 'heater_wiring'].forEach(prefix => {
         const count = getInt(`${prefix}_units`);
         const installType = document.getElementById(prefix==='ac_wiring'?'ac_install_type_4':'wh_install_type_5')?.value;
         for(let i=1; i<=count; i++) {
             const dist = getVal(`${prefix}_${i}_panel_to_breaker_dist`) + getVal(`${prefix}_${i}_breaker_to_unit_dist`);
             const ground = getVal(`${prefix}_${i}_panel_to_unit_dist_ground`);
+            
             if(dist > 0 || ground > 0) {
                 addQty('1.4', dist); addQty('1.5', ground);
                 if(dist > 0) {
@@ -304,9 +321,28 @@ function buildQuantitiesFromDOM() {
                         addQty('2.2', dist); addQty('13.2', 2);
                     } else if(installType.includes('trunking')) addQty('14.1', dist);
                 }
-                addQty('12.1', 1);
-                // Note: Breaker size logic is in display only for now, simplistic count in calculator if needed
-                // For simplicity in V2, we add general breaker cost if needed or rely on user adding specific MCBs in card 2
+                addQty('12.1', 1); // กล่องเบรกเกอร์
+
+                // อ่านค่า Breaker ที่เลือก
+                const breakerSelect = document.getElementById(`${prefix}_${i}_breaker_select`);
+                const infoDiv = document.getElementById(`${prefix}_${i}_breaker_info`);
+                let amps = 0;
+
+                if (breakerSelect) {
+                    if (breakerSelect.value === 'auto' && infoDiv) {
+                        // ถ้าเลือก Auto ให้เอาค่าที่แนะนำไว้
+                        amps = parseInt(infoDiv.dataset.autoAmp || 0);
+                    } else {
+                        // ถ้าเลือก Manual ให้เอาค่าจาก Dropdown
+                        amps = parseInt(breakerSelect.value || 0);
+                    }
+                }
+
+                if(amps > 0) {
+                    if(amps <= 16) addQty('10.1', 1);
+                    else if(amps <= 20) addQty('10.2', 1);
+                    else if(amps <= 32) addQty('10.3', 1);
+                }
             }
         }
     });
@@ -317,7 +353,6 @@ function buildQuantitiesFromDOM() {
     addQty('11.5', getInt('cctv_points'));
     addQty('7.1', getInt('heater_units')); addQty('5.1', getInt('ac_units'));
     addQty('5.3', getInt('pump_units')); addQty('5.4', getInt('fan_units'));
-    
     const pt = document.getElementById('wp_install_type_6')?.value;
     if(pt === 'vct_clip') addQty('16.1', 15 * getInt('pump_units'));
     else if(pt === 'nyy_burial') { addQty('16.2', 15 * getInt('pump_units')); addQty('2.1', 15 * getInt('pump_units')); }
@@ -341,7 +376,6 @@ function buildQuantitiesFromDOM() {
     return quantities;
 }
 
-// --- Calc & Display ---
 function performCalculation() {
     const settings = {
         qualityMultiplier: parseFloat(document.getElementById('material_quality').value) || 1.0,
@@ -354,7 +388,6 @@ function performCalculation() {
         minCharge: parseFloat(document.getElementById('min_charge').value) || 0,
         cableSpecConfig: {
             mainType: document.getElementById('main_ext_type_7').value,
-            // ใช้ค่าที่ User เลือกจาก Dropdown โดยตรง (User-Selected)
             selectedSize: document.getElementById('main_cable_size_7').value 
         }
     };
@@ -377,7 +410,6 @@ function displayReport() {
     }
 }
 
-// --- Helpers ---
 function setupExportButtons() {
     document.getElementById('save-pdf-btn')?.addEventListener('click', async () => {
         const btn = document.getElementById('save-pdf-btn');
@@ -426,7 +458,6 @@ function setupManualJobListeners() {
                 if(desc && q>0) manualPOItems.push({id:`MAN_${Date.now()}_${idx}`, description:desc, quantity:q, unit:u, unit_price:p, spec:`(งาน: ${name})`});
             });
             
-            // Simple BOQ addition (Cost is approximated from manual inputs for summary)
             let matCost = 0;
             document.querySelectorAll('#manual-job-materials-table tbody tr').forEach(row => matCost += (parseFloat(row.querySelector('.manual-mat-qty').value)||0)*(parseFloat(row.querySelector('.manual-mat-price').value)||0));
             

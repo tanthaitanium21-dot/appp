@@ -94,6 +94,7 @@ export function renderDynamicInputs(prefix, index, points) {
     container.classList.add('pl-4', 'border-l-4', 'border-blue-100', 'py-2');
 }
 
+// แก้ไข: เพิ่มช่องเลือกเบรกเกอร์ และพื้นที่แสดงข้อมูลแนะนำ
 export function renderDedicatedCircuitInputs(prefix, count, container) {
     container.innerHTML = '';
     if (count <= 0) return;
@@ -115,22 +116,40 @@ export function renderDedicatedCircuitInputs(prefix, count, container) {
             <div class="circuit-container bg-gray-50 p-4 rounded-lg border border-gray-200 mb-3 shadow-sm">
                 <div class="flex items-center justify-between mb-3 border-b pb-2">
                     <p class="font-bold text-gray-800">เครื่องที่ ${i}</p>
-                    <!-- Display Breaker Label -->
-                    <span id="${prefix}_${i}_breaker_display" class="text-xs font-mono bg-gray-100 text-gray-500 px-2 py-1 rounded">Breaker: Auto</span>
+                    <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded uppercase">${isAc ? 'Air Cond.' : 'Water Heater'}</span>
                 </div>
                 
-                <div class="grid grid-cols-1 gap-3">
-                    <!-- แถว 1: ขนาดเครื่อง -->
-                    <div>
-                        <label class="text-xs font-medium text-slate-600">${unitSelectorLabel}</label>
-                        <select id="${prefix}_${i}_unit_size" class="dedicated-unit-size form-input mt-1 w-full text-sm" 
-                                data-display-id="${prefix}_${i}_breaker_display" data-type="${isAc ? 'ac' : 'wh'}">
-                            ${unitOptions}
-                        </select>
+                <div class="grid grid-cols-1 gap-4">
+                    <!-- ส่วนเลือกขนาดและเบรกเกอร์ -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">${unitSelectorLabel}</label>
+                            <select id="${prefix}_${i}_unit_size" class="dedicated-unit-size form-input w-full text-sm" 
+                                    data-target-breaker="${prefix}_${i}_breaker_select" 
+                                    data-target-info="${prefix}_${i}_breaker_info" 
+                                    data-type="${isAc ? 'ac' : 'wh'}">
+                                ${unitOptions}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">ขนาดเบรกเกอร์</label>
+                            <select id="${prefix}_${i}_breaker_select" class="form-input w-full text-sm font-bold text-blue-700">
+                                <option value="auto">Auto (ตามมาตรฐาน)</option>
+                                <option value="16">16 Amp</option>
+                                <option value="20">20 Amp</option>
+                                <option value="32">32 Amp</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- พื้นที่แสดงข้อมูลแนะนำ -->
+                    <div id="${prefix}_${i}_breaker_info" class="bg-green-50 border border-green-100 rounded p-2 text-xs text-green-800 flex items-start gap-2">
+                        <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span>กำลังโหลดข้อมูล...</span>
                     </div>
                     
-                    <!-- แถว 2: ระยะทางละเอียด -->
-                    <div class="grid grid-cols-2 gap-3 bg-white p-2 rounded border border-slate-100">
+                    <!-- ระยะทาง -->
+                    <div class="grid grid-cols-2 gap-3 bg-white p-3 rounded border border-slate-200">
                         <div>
                             <label class="text-[10px] text-slate-500">ระยะ ตู้ไฟ→เบรกเกอร์ (ม.)</label>
                             <input type="number" id="${prefix}_${i}_panel_to_breaker_dist" class="form-input w-full text-sm" placeholder="0">
@@ -141,7 +160,6 @@ export function renderDedicatedCircuitInputs(prefix, count, container) {
                         </div>
                     </div>
 
-                    <!-- แถว 3: สายดิน -->
                     <div>
                         <label class="text-xs text-slate-600">ระยะสายดิน ตู้ไฟ→เครื่อง (ม.)</label>
                         <input type="number" id="${prefix}_${i}_panel_to_unit_dist_ground" class="form-input mt-1 w-full text-sm" placeholder="0">
@@ -157,7 +175,6 @@ export function formatCurrency(num) {
     return num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// นี่คือฟังก์ชันที่ขาดไป (เพิ่มกลับมาให้แล้วครับ)
 export function createSummaryTable(summaryItems) {
     if (!summaryItems || summaryItems.length === 0) return '';
     

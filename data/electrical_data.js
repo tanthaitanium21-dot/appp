@@ -1,5 +1,5 @@
 // data/electrical_data.js
-// ข้อมูลงานไฟฟ้าและราคา (ฉบับสมบูรณ์: กู้คืนข้อมูลครบถ้วน + เพิ่มของใหม่)
+// ข้อมูลงานไฟฟ้าและราคา (V2.4: ปรับท่อเป็นราคาต่อเมตร / กิ๊บจับ x3)
 
 export const mainCableSpecs = {
     'MEA': { // กฟน.
@@ -25,8 +25,15 @@ export const initialPriceList = {
     "L-TV-POINT": 120, "L-TV-WIRING": 15, "L-CCTV-POINT": 450, "L-BREAKER-INSTALL": 250,
     "M-WIRE-THW-2.5-BRN": 15, "M-WIRE-THW-2.5-BLU": 15, "M-WIRE-THW-2.5-GRN": 15,
     "M-WIRE-THW-1.5-BRN": 10, "M-WIRE-THW-1.5-BLU": 10, "M-WIRE-THW-1.5-GRN": 10,
-    "M-WIRE-VAF-2.5": 25, "M-CLIP-VAF": 1, "M-CONDUIT-PVC-1/2": 58, "M-SADDLE-PVC-1/2": 1,
-    "M-CONN-PVC-COUPLING": 3, "M-CONDUIT-EMT-1/2": 145, "M-STRAP-EMT-1/2": 3,
+    "M-WIRE-VAF-2.5": 25, "M-CLIP-VAF": 1, 
+    
+    // --- ปรับราคาเป็น "ต่อเมตร" ---
+    "M-CONDUIT-PVC-1/2": 20, // เดิม 58 (ต่อเส้น) -> ปรับเป็น ~20 บาท/เมตร
+    "M-CONDUIT-EMT-1/2": 50, // เดิม 145 (ต่อเส้น) -> ปรับเป็น ~50 บาท/เมตร
+    
+    "M-SADDLE-PVC-1/2": 2, // กิ๊บก้ามปู
+    "M-CONN-PVC-COUPLING": 3, 
+    "M-STRAP-EMT-1/2": 3, // แคล้มป์จับท่อ
     "M-CONN-EMT-COUPLING": 10, "M-CONN-PVC-CONNECTOR": 5, "M-CONN-EMT-CONNECTOR": 8,
     "M-OUTLET-DPLX-GND": 150, "M-PLATE-2CH": 20, "M-BOX-SURFACE-2X4": 15, "M-BOX-HANDY-2X4": 25,
     "M-SWITCH-1WAY": 120, "M-PLATE-1CH": 14, "M-LIGHT-DOWNLIGHT-E27": 350, "M-LIGHT-BULB-LED-9W": 65,
@@ -46,14 +53,9 @@ export const initialPriceList = {
     "M-CABLE-NYY-2C-2.5": 35, "M-WATERPROOF-BOX": 45, "L-POLE-6.0M": 950, "L-POLE-7.0M": 1025,
     "L-POLE-8.0M": 1100, "L-POLE-9.0M": 1250, "M-POLE-6.0M": 1050, "M-POLE-7.0M": 1350,
     "M-POLE-8.0M": 1680, "M-POLE-9.0M": 2090, "L-RACK-INSTALL": 150, "M-RACK-2SET": 300,
-    "M-RACK-4SET": 600, 
-    
-    // --- ส่วนที่เพิ่มใหม่ (New Items) ---
-    "M-RACK-1SET": 150, 
+    "M-RACK-4SET": 600, "M-RACK-1SET": 150, 
     "M-CABLE-THW-10": 45, "M-CABLE-THW-16": 75, "M-CABLE-THW-25": 110, "M-CABLE-THW-35": 150, "M-CABLE-THW-50": 200,
     "M-CABLE-THW-A-16": 20, "M-CABLE-THW-A-25": 25, "M-CABLE-THW-A-35": 35, "M-CABLE-THW-A-50": 45,
-    
-    // --- รายการเดิมที่ต้องมีอยู่ครบ ---
     "L-EV-INSTALL-20M": 10000, "M-EV-CHARGER-7KW": 30000, "M-RCD-TYPE-B": 4000,
     "M-CONDUIT-EMT-3/4": 120, "FEE-TOU-METER": 6500, "L-DEMO-DOWNLIGHT": 25,
     "L-DEMO-OUTLET-SWITCH": 25, "L-DEMO-PIPE": 200, "L-DEMO-AC": 1500, "L-REPAIR-WALL-POINT": 65
@@ -68,10 +70,22 @@ export const electricalInstallationData = [
         { "task_id": "1.5", "task_name": "ร้อยสายดิน THW 4.0mm² ในท่อ (G)", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-GND-WIRING-4.0"}], "material_components": [{"material_id": "M-WIRE-THW-4.0-GRN", "spec":"สาย THW 4.0mm² สีเขียว/เหลือง"}] }
     ]},
     { "category_id": "2.0", "category_name": "งานติดตั้งท่อร้อยสาย", "tasks": [
-        { "task_id": "2.1", "task_name": "เดินท่อ PVC ลอย", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-21-01"}], "material_components": [{"material_id": "M-CONDUIT-PVC-1/2", "spec": "ท่อ PVC 1/2\"", "usage_logic": "ceil(m/2.92) pipes"}, {"material_id": "M-SADDLE-PVC-1/2", "spec": "กิ๊ปจับท่อ PVC 1/2\"", "usage_logic": "1 per meter"}, {"material_id": "M-CONN-PVC-COUPLING", "spec": "ข้อต่อตรง PVC", "usage_logic": "ceil(m/2.92)-1 couplings"}] },
-        { "task_id": "2.2", "task_name": "เดินท่อ EMT ลอย", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-22-01"}], "material_components": [{"material_id": "M-CONDUIT-EMT-1/2", "spec": "ท่อ EMT 1/2\"", "usage_logic": "ceil(m/3.05) pipes"}, {"material_id": "M-STRAP-EMT-1/2", "spec": "แคล้มป์จับท่อ EMT 1/2\"", "usage_logic": "1 per 1.5 meter"}, {"material_id": "M-CONN-EMT-COUPLING", "spec": "ข้อต่อตรง EMT", "usage_logic": "ceil(m/3.05)-1 couplings"}] },
-        { "task_id": "2.3", "task_name": "เดินท่อ PVC ฝังผนัง (รวมกรีด/สกัด/ฉาบปูนหยาบ)", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-23-01"}], "material_components": [{"material_id": "M-CONDUIT-PVC-1/2", "spec": "ท่อ PVC 1/2\"", "usage_logic": "ceil(m/2.92) pipes"}, {"material_id": "M-CONN-PVC-COUPLING", "spec": "ข้อต่อตรง PVC", "usage_logic": "ceil(m/2.92)-1 couplings"}]}
+        { "task_id": "2.1", "task_name": "เดินท่อ PVC ลอย", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-21-01"}], "material_components": [
+            { "material_id": "M-CONDUIT-PVC-1/2", "spec": "ท่อ PVC 1/2\" (ราคาต่อเมตร)", "usage_logic": "1 per meter" },
+            { "material_id": "M-SADDLE-PVC-1/2", "spec": "กิ๊บก้ามปูจับท่อ PVC 1/2\"", "usage_logic": "3 per meter" },
+            { "material_id": "M-CONN-PVC-COUPLING", "spec": "ข้อต่อตรง PVC", "usage_logic": "0.35 per meter" }
+        ]},
+        { "task_id": "2.2", "task_name": "เดินท่อ EMT ลอย", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-22-01"}], "material_components": [
+            { "material_id": "M-CONDUIT-EMT-1/2", "spec": "ท่อ EMT 1/2\" (ราคาต่อเมตร)", "usage_logic": "1 per meter" },
+            { "material_id": "M-STRAP-EMT-1/2", "spec": "แคล้มป์จับท่อ EMT 1/2\"", "usage_logic": "3 per meter" },
+            { "material_id": "M-CONN-EMT-COUPLING", "spec": "ข้อต่อตรง EMT", "usage_logic": "0.35 per meter" }
+        ]},
+        { "task_id": "2.3", "task_name": "เดินท่อ PVC ฝังผนัง (รวมกรีด/สกัด/ฉาบปูนหยาบ)", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-23-01"}], "material_components": [
+            { "material_id": "M-CONDUIT-PVC-1/2", "spec": "ท่อ PVC 1/2\" (ราคาต่อเมตร)", "usage_logic": "1 per meter" },
+            { "material_id": "M-CONN-PVC-COUPLING", "spec": "ข้อต่อตรง PVC", "usage_logic": "0.35 per meter" }
+        ]}
     ]},
+    // ... (ส่วนอื่นๆ คงเดิม) ...
     { "category_id": "3.0", "category_name": "งานติดตั้งสวิตช์-เต้ารับ", "tasks": [
         { "task_id": "3.1", "task_name": "ติดตั้งเต้ารับแบบลอย", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-31-01"}], "material_components": [{"material_id": "M-OUTLET-DPLX-GND", "spec": "เต้ารับกราวด์คู่"}, {"material_id": "M-PLATE-2CH", "spec": "หน้ากาก 2 ช่อง"}, {"material_id": "M-BOX-SURFACE-2X4", "spec": "กล่องลอย 2x4\""}, {"material_id": "M-TAPE-ELEC", "spec": "เทปพันสายไฟ"}] },
         { "task_id": "3.2", "task_name": "ติดตั้งเต้ารับแบบฝัง", "unit_of_measure": "จุด", "labor_components": [{"labor_id": "L-32-01"}], "material_components": [{"material_id": "M-OUTLET-DPLX-GND", "spec": "เต้ารับกราวด์คู่"}, {"material_id": "M-PLATE-2CH", "spec": "หน้ากาก 2 ช่อง"}, {"material_id": "M-BOX-HANDY-2X4", "spec": "กล่องฝัง 2x4\""}, {"material_id": "M-TAPE-ELEC", "spec": "เทปพันสายไฟ"}] },
@@ -143,10 +157,7 @@ export const electricalInstallationData = [
         { "task_id": "17.3", "task_name": "ปักเสาไฟฟ้า 9.0ม.", "unit_of_measure": "ต้น", "labor_components": [{"labor_id": "L-POLE-9.0M"}], "material_components": [{"material_id": "M-POLE-9.0M"}] },
         { "task_id": "17.4-2", "task_name": "ติดตั้งแร็ค 2 ชุด", "unit_of_measure": "ชุด", "labor_components": [{"labor_id": "L-RACK-INSTALL"}], "material_components": [{"material_id": "M-RACK-2SET"}] },
         { "task_id": "17.4-4", "task_name": "ติดตั้งแร็ค 4 ชุด", "unit_of_measure": "ชุด", "labor_components": [{"labor_id": "L-RACK-INSTALL"}], "material_components": [{"material_id": "M-RACK-4SET"}] },
-        
-        // เพิ่ม Task แร็ค 1 ชุด
         { "task_id": "17.4-1", "task_name": "ติดตั้งแร็ค 1 ชุด", "unit_of_measure": "ชุด", "labor_components": [{"labor_id": "L-RACK-INSTALL"}], "material_components": [{"material_id": "M-RACK-1SET"}] },
-
         { "task_id": "17.5", "task_name": "เดินสายเมน THW/THW-A", "unit_of_measure": "เมตร", "labor_components": [{"labor_id": "L-11-01"}], "material_components": [
             {"material_id": "M-CABLE-THW-10"}, {"material_id": "M-CABLE-THW-16"}, {"material_id": "M-CABLE-THW-25"}, {"material_id": "M-CABLE-THW-35"}, {"material_id": "M-CABLE-THW-50"},
             {"material_id": "M-CABLE-THW-A-16"}, {"material_id": "M-CABLE-THW-A-25"}, {"material_id": "M-CABLE-THW-A-35"}, {"material_id": "M-CABLE-THW-A-50"}
